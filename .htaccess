@@ -1,0 +1,18 @@
+RewriteEngine On
+
+# Désactive l’affichage du répertoire
+Options -Indexes
+
+# Laisse passer les fichiers existants dans Assets, Contenu, JavaScript, Publics/Uploads
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^(Assets|Styles|Javascript)/ - [L]
+
+# Redirige vers index.php si dossier demandé sans fichier spécifique
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(Assets|Styles|Javascript)/?$ index.php [L,R=302,QSA]
+
+# Redirection générale
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L,QSA]
