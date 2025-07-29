@@ -1,11 +1,12 @@
 <?php
-
 require_once __DIR__ . '/vendor/autoload.php';
 
+// Chargement des variables d'environnement
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-$env = $_ENV['APP_ENV'] ?? 'prod'; // fallback en cas d'oubli
+// Configuration de l'environnement
+$env = $_ENV['APP_ENV'] ?? 'prod';
 if ($env === 'dev') 
 {
     ini_set('display_errors', 1);
@@ -17,8 +18,52 @@ else
     error_reporting(0);
 }
 
-echo "Spectacle works!";
-exit();
+// Autoloading des classes
+spl_autoload_register(function ($class) {
+    $paths = 
+    [
+        __DIR__ . '/Controller/'
+    ];
+    
+    foreach ($paths as $path) {
+        $file = $path . $class . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+    }
+});
+
+// Configuration des constantes principales
+define('SITE_NAME', 'Salle de Spectacle');
+define('SITE_URL', $_ENV['SITE_URL'] ?? 'localhost');
+
+/**
+ * Affiche une page 404
+ */
+function show404() 
+{
+    http_response_code(404);
+    
+    // Envoie une réponse JSON pour les requêtes API
+    if (strpos($_SERVER['REQUEST_URI'], '/api/') !== false ||
+        (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'error' => 'Route non trouvée',
+            'code' => 404
+        ]);
+    } 
+    else 
+    {
+        // Affiche une page 404 HTML
+        echo "<h1>Erreur 404</h1><p>Page non trouvée</p>";
+    }
+}
+
+// ===================================
+// ROUTAGE PRINCIPAL
+// ===================================
 
 // Définir BASE_URL
 define('BASE_URL', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
@@ -38,8 +83,7 @@ $uri = '/' . ltrim($uri, '/');
 $scriptDir = '/' . trim($scriptDir, '/');
 
 // 3. Enlever le scriptDir si présent en début d'URI
-if (stripos($uri, $scriptDir) === 0) 
-{
+if (stripos($uri, $scriptDir) === 0) {
     $uri = substr($uri, strlen($scriptDir));
 }
 
@@ -49,27 +93,87 @@ $uri = trim($uri, '/');
 // 5. Découpe
 $segments = explode('/', $uri);
 
-// Si pas d'URI spécifique, page d'accueil
-if (empty($segments[0]) || $segments[0] === 'index.php') 
-{
-    require './View/AccueilConnexion.php';
-    exit;
-}
+$pageNonTrouvee = false;
 
-$pageNotFound = false;
-
-// Routage basé sur segments
-switch ($segments[0]) 
+switch ($segments[0] ?? '/') 
 {
-    default:
-        $pageNotFound = true;
+    case '/':
+    case 'index.php':
+    case 'index.html':
+        break;
+
+    case '/dashboard':
+        break;
+
+    case 'login':
+        break;
+
+    case 'register':
+        break;
+    case '/logout':
+        break;
+
+    case 'password':
+        switch ($segments[1] ?? '')
+        {
+            case 'reset':
+                break;
+            case 'change':
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+
+    case 'spectacle':
+        switch ($segments[1] ?? '')
+        {
+            case 'add':
+                break;
+            case 'move':
+                break;
+            case 'delete':
+                break;
+            case 'list':
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+    
+    case 'seance':
+        switch ($segments[1] ?? '')
+        {
+            case 'list':
+                break;
+            case 'calendar':
+                break;
+            case 'add':
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+
+    case 'user':
+        switch ($segments[1] ?? '')
+        {
+            case 'list':
+                break;
+            case 'profil':
+
+            default:
+                break;
+        }
         break;
 }
 
-// Si on a pas une URL valide, alors on renvoie l'erreur 404
-if ($pageNotFound)
+// Si aucune route ne correspond, alors on affiche la fameuse erreur 404
+if ($pageNonTrouvee)
 {
-    http_response_code(404);
-    echo "Erreur 404 - Page non trouvée : " . $uri;
+    show404();
 }
 ?>
