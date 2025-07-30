@@ -31,4 +31,25 @@ class UserActivity
 
         return true;
     }
+
+    public function toggleUserActivity()
+    {
+        $db = Database::getInstance()->getConnection();
+
+        if (!isset($userActif))
+        {
+            return false;
+        }
+
+        // Inverser le statut
+        $newStatus = $this->userActif ? 0 : 1;
+        $stmt = $db->prepare("UPDATE utilisateur SET actif_utilisateur = ? WHERE utilisateur_id = ?");
+        if ($stmt->execute([$newStatus, $this->userId]))
+        {
+            $this->userActif = $newStatus;
+            return true;
+        }
+
+        return false;
+    }
 }
