@@ -99,4 +99,28 @@ class TokenResetPassword
         return $stmt->execute();
     }
 
+        // Fonction pour supprimer le token de l'utilisateur
+    public function resetUserToken()
+    {
+        if (empty($this->userId))
+        {
+            return false;
+        }
+
+        $sql = "UPDATE utilisateur SET token_utilisateur = NULL, 
+        date_exp_token_utilisateur = NULL 
+        WHERE utilisateur_id = :userId;";
+
+        // Préparation de la requête
+        $pdo = Database::getInstance()->getConnection();
+        $stmt = $pdo->prepare($sql);
+
+        // Lier les paramètres avec les valeurs correspondantes
+        $stmt->bindParam(':userId', $this->userId, PDO::PARAM_INT);
+
+        // Exécuter la requête
+        $stmt->execute();
+        return true;
+    }
+
 }
