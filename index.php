@@ -43,22 +43,9 @@ define('SITE_URL', $_ENV['SITE_URL'] ?? 'localhost');
  */
 function show404() 
 {
+    // Affiche une page 404 HTML
     http_response_code(404);
-    
-    // Envoie une réponse JSON pour les requêtes API
-    if (strpos($_SERVER['REQUEST_URI'], '/api/') !== false ||
-        (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)) {
-        header('Content-Type: application/json');
-        echo json_encode([
-            'error' => 'Route non trouvée',
-            'code' => 404
-        ]);
-    } 
-    else 
-    {
-        // Affiche une page 404 HTML
-        echo "<h1>Erreur 404</h1><p>Page non trouvée</p>";
-    }
+    echo "<h1>Erreur 404</h1><p>Page non trouvée</p>";
 }
 
 // ===================================
