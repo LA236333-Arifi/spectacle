@@ -44,9 +44,14 @@ class Security
         return $_SESSION['csrf_token'];
     }    
 
-    public function checkCSRFToken($tokenRecu)
+    public function checkCSRFToken($tokenRecu = null)
     {
         $this->setCookieParams();
+
+        if ($tokenRecu == null)
+        {
+            $tokenRecu = $_POST['csrf_token'] ?? '';
+        }
 
         $valid = isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $tokenRecu);
         
