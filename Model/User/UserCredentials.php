@@ -71,4 +71,72 @@ class UserCredentials extends User
         // Retour du résultat
         return $stmt->fetchColumn() === false;
     }
+
+    // Méthode statique pour mettre à jour le mot de passe d'un utilisateur par son ID
+    public static function updateUserPasswordById($userId, $newPassword)
+    {
+        // Connexion à la base de données
+        $pdo = Database::getInstance()->getConnection();
+
+        // Requête SQL pour mettre à jour le mot de passe de l'utilisateur
+        $sql = "UPDATE utilisateur SET mdp_utilisateur = :password WHERE Id_utilisateur = :userId";
+
+        // Préparation de la requête SQL
+        $stmt = $pdo->prepare($sql);
+
+        // On hash le mot de passe pour convenir aux standards de sécurité
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+        // Lier les paramètres à la requête SQL
+        $stmt->bindParam(':password', $hashedPassword, PDO::PARAM_STR);  // Lien du mot de passe haché
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);             // Lien de l'ID de l'utilisateur
+
+        // Exécution de la requête et retour de son résultat (soit true soit false)
+        return $stmt->execute();
+    }
+
+    /**
+     * Création d'un nouvel utilisateur.
+     * La vérification des données à insérer se fait avant d'appeler la fonction
+     * @param UserData $data
+     * @return bool
+     */
+    public function insertUser(): bool
+    {   
+        $query = "INSERT INTO utilisateurs (nom_utilisateur, prenom_utilisateur,  mail_utilisateur, mdp_utilisateur, actif_utilisateur, role_utilisateur_id) VALUES (?, ?, ?, ?, ?)";
+        
+        // On hash le mot de passe pour convenir aux standards de sécurité
+        $hashedPassword = password_hash($this->userData->getMdpUtilisateur(), PASSWORD_DEFAULT);
+        
+        // Quand on ajoute un user, il est par défaut actif. C'est seulement plus tard qu'on peut le désactiver si on veut
+        $actifDefaultValue = 1;
+
+        try 
+        {
+            $pdo = Database::getInstance()->getConnection();
+            $stmt = $pdo->prepare($query);
+            $result = $stmt->execute
+            (
+                [
+                    $this->userData->getNomUtilisateur(), 
+                    $this->userData->getPrenomUtilisateur(), 
+                    $this->userData->getMailUtilisateur(),
+                    $hashedPassword,
+                    $actifDefaultValue,
+                    $this->userData->getRoleUtilisateur()
+                ]
+            );
+
+            if ($result)
+            {
+                $this->setId($pdo->lastInsertId());
+            }
+
+            return $result;
+        } 
+        catch (Exception $e) 
+        {
+            return false;
+        }
+    }
 }
