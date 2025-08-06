@@ -22,4 +22,18 @@ class Performeur
         }
         return false;
     }
+
+       public function getPerformeurData()
+    {
+        $query = "SELECT nom_performeur, prenom_performeur, role_performeur_id FROM Performeur_Spectacle WHERE performeur_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$this->performeurId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row)
+        {
+            return new PerformeurData($row['nom_performeur'], $row['prenom_performeur'], (int)$row['role_performeur_id']);
+        }
+        return null;
+    }
 }
