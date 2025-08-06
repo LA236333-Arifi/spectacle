@@ -244,5 +244,119 @@ class AuthController
             return false;
         }
     }
+
+    public function login()
+    {
+        // Redirection si déjà connecté
+        if (UserConnectionUtils::isUserConnected()) 
+        {
+            header('Location:' . BASE_URL . '/dashboard');
+            return false;
+        }
+
+        // Si c'est du GET, alors on affiche seulement la page de connexion avec le token csrf
+        if (RequestUtils::isGetMethod())
+        {
+            // Génération du token CSRF pour le formulaire du login
+            $csrfToken = $this->security->genererCSRFToken();
+
+            $viewRenderer = new ViewRenderer("View/Login.php", ['token_csrf' => $csrfToken]);
+            $viewRenderer->render();
+            return true;
+        }
+        else if (RequestUtils::isPostMethod())
+        {
+            header('Content-Type: application/json');
+
+            // Vérification du token CSRF
+            if (!$this->security->checkCSRFToken($_POST['csrf_token'] ?? '')) 
+            {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => "Token CSRF invalide."
+                ]);
+                return false;
+            }
+
+            // Définir un code HTTP 400 (Bad Request) par défaut
+            http_response_code(400);
+
+            // Recupere les valeur du formulaire a l'aide des variable POST
+            $email = $_POST['mail_utilisateur'] ?? null;
+            $password = $_POST['mdp_utilisateur'] ?? null;
+
+            // On verifie si le formulaire est complet
+            if (empty($email) || empty($password)) 
+            {
+                // Réponse JSON avec le message d'erreur
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Formulaire incomplet. Veuillez remplir les champs du mail et du mot de passe.'
+                ]);
+
+                return false;
+            }
+
+            $userLogin = new UserLogin($email);
+            if ($userLogin->verifyUserMail() == false)
+            {
+                // Réponse JSON avec le message d'erreur
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => "Le format de l'email est incorrect. Veuillez suivre l'annotation suivante: abc@def.xyz"
+                ]);
+                
+                return false;
+            } 
+
+            // On vérifie que l'utilisateur a rentré le bon mot de passe 
+            if ($userLogin->verifyActiveUserPassword($password) == false)
+            {
+                // Réponse JSON avec le message d'erreur.
+                // on reste flou sur la raison de l'échec de connexion pour la sécurité.
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Les informations de connexion sont incorrectes.'
+                ]);
+                
+                return false;
+            }
+
+            // On crée la session pour l'utilisateur
+            if ($userLogin->createUserSession() == false)
+            {
+                // Définir un code HTTP 500 (Internal Server Error)
+                http_response_code(500);
+
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Echec de la connexion. Veuillez réessayer plus tard.'
+                ]);
+
+                return false;
+            }
+
+            // On définit un code HTTP 200 pour le succès
+            http_response_code(200);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Vous êtes connectés',
+                'redirect' => BASE_URL . "/dashboard",
+                'crossmessage' => 'yes'
+            ]);
+
+            return true;
+        }
+        else
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+    }
 }
 
