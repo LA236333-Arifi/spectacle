@@ -52,4 +52,11 @@ class Groupe
         $stmt = $this->pdo->prepare($query);
         return $stmt->execute([$this->groupeId, $performeurId]);
     }
+
+      public function retirerPerformeurDuGroupe($performeurId)
+    {
+        $query = "DELETE FROM Liaison_Groupe WHERE groupe_id = ? AND performeur_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$this->groupeId, $performeurId]);
+    }
 }
