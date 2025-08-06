@@ -30,5 +30,10 @@ class Groupe
         $stmt->execute([$this->groupeId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
+    public function modifierNomGroupe($nouveauNom)
+    {
+        $query = "UPDATE Groupe_Spectacle SET nom_groupe = ? WHERE groupe_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$nouveauNom, $this->groupeId]);
+    }
 }
