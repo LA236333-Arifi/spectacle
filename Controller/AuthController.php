@@ -358,5 +358,21 @@ class AuthController
             return false;
         }
     }
+    
+    /**
+     * Déconnexion
+     */
+    public function logout()
+    {
+        $_SESSION = [];
+
+        session_destroy();
+
+        // Redirection facultative pour les tests
+        if (RequestUtils::isGetMethod())
+        {
+            header('Location: ' . BASE_URL . '/');
+        }
+    }
 }
 
