@@ -44,4 +44,10 @@ class Performeur
         return $stmt->execute([$data->getNom(), $data->getPrenom(), $this->performeurId]);
     }
 
+    public function modifierRole(int $roleId)
+    {
+        $query = "UPDATE Performeur_Spectacle SET role_performeur_id = ? WHERE performeur_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$roleId, $this->performeurId]);
+    }
 }
