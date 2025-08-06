@@ -1,0 +1,25 @@
+<?php
+
+class Performeur
+{
+    private $performeurId;
+    private $pdo;
+
+    public function __construct($performeurId = null)
+    {
+        $this->performeurId = $performeurId;
+        $this->pdo = Database::getInstance()->getConnection();
+    }
+
+    public function ajouterPerformeur(PerformeurData $data)
+    {
+        $query = "INSERT INTO Performeur_Spectacle (nom_performeur, prenom_performeur, role_performeur_id) VALUES (?, ?, ?)";
+        $stmt = $this->pdo->prepare($query);
+        if ($stmt->execute([$data->getNom(), $data->getPrenom(), $data->getRoleId()]))
+        {
+            $this->performeurId = $this->pdo->lastInsertId();
+            return $this->performeurId;
+        }
+        return false;
+    }
+}
