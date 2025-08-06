@@ -36,4 +36,12 @@ class Performeur
         }
         return null;
     }
+
+      public function modifierNomPrenom(PerformeurData $data)
+    {
+        $query = "UPDATE Performeur_Spectacle SET nom_performeur = ?, prenom_performeur = ? WHERE performeur_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$data->getNom(), $data->getPrenom(), $this->performeurId]);
+    }
+
 }
