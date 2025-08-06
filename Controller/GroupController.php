@@ -154,4 +154,50 @@ class GroupController
         echo json_encode(['status' => 'success', 'message' => "Groupe modifié avec succès"]);
         return true;
     }
+
+    /**
+     * Route: POST /performeur/add
+     * Ajoute un performeur à la DB
+     */
+    public function addPerformeur()
+    {
+        if (RequestUtils::isPostMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour ajouter un performeur."));
+            return false;
+        }
+
+        $nom = $_POST['nom_performeur'] ?? null;
+        $prenom = $_POST['prenom_performeur'] ?? null;
+        $roleId = $_POST['role_performeur_id'] ?? null;
+
+        if (empty($nom) || empty($prenom) || empty($roleId))
+        {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => "Nom, prénom ou rôle du performeur manquant."]);
+            return false;
+        }
+
+        $performeurDTO = new PerformeurData($nom, $prenom, (int)$roleId);
+        $performeur = new Performeur();
+        $performeurId = $performeur->ajouterPerformeur($performeurDTO);
+
+        if ($performeurId)
+        {
+            http_response_code(200);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'message' => "Performeur ajouté avec succès", 'performeur_id' => $performeurId]);
+            return true;
+        }
+        else
+        {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => "Impossible d'ajouter le performeur."]);
+            return false;
+        }
+    }
+
 }
