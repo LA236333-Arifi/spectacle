@@ -43,4 +43,13 @@ class Groupe
         $stmt = $this->pdo->prepare($query);
         return $stmt->execute([$this->groupeId]);
     }
+
+       public function ajouterPerformeurAuGroupe($performeurId)
+    {
+        // On suppose que le performeur existe déjà en DB, il faut donc son id
+        // Si besoin de créer le performeur ici, il faut instancier la classe Performeur
+        $query = "INSERT INTO Liaison_Groupe (groupe_id, performeur_id) VALUES (?, ?)";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$this->groupeId, $performeurId]);
+    }
 }
