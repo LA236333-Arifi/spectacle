@@ -50,4 +50,11 @@ class Performeur
         $stmt = $this->pdo->prepare($query);
         return $stmt->execute([$roleId, $this->performeurId]);
     }
+
+     public function supprimerPerformeur()
+    {
+        $query = "DELETE FROM Performeur_Spectacle WHERE performeur_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$this->performeurId]);
+    }
 }
