@@ -36,4 +36,11 @@ class Groupe
         $stmt = $this->pdo->prepare($query);
         return $stmt->execute([$nouveauNom, $this->groupeId]);
     }
+
+     public function supprimerGroupe()
+    {
+        $query = "DELETE FROM Groupe_Spectacle WHERE groupe_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$this->groupeId]);
+    }
 }
