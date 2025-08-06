@@ -59,4 +59,22 @@ class Groupe
         $stmt = $this->pdo->prepare($query);
         return $stmt->execute([$this->groupeId, $performeurId]);
     }
+
+     public function getPerformeursDuGroupe()
+    {
+        $query = "SELECT p.nom_performeur, p.prenom_performeur, p.role_performeur_id, p.performeur_id 
+                  FROM Performeur_Spectacle p
+                  INNER JOIN Liaison_Groupe lg ON p.performeur_id = lg.performeur_id
+                  WHERE lg.groupe_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$this->groupeId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $performeurs = [];
+        foreach ($rows as $row)
+        {
+            $performeurs[] = new PerformeurData($row['nom_performeur'], $row['prenom_performeur'], (int)$row['role_performeur_id']);
+        }
+        return $performeurs;
+    }
 }
