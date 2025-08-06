@@ -200,4 +200,61 @@ class GroupController
         }
     }
 
+    /**
+     * Route: POST /performeur/change
+     * Modifie le nom, prénom ou rôle d'un performeur
+     */
+    public function changePerformeur()
+    {
+        if (RequestUtils::isPostMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour modifier un performeur."));
+            return false;
+        }
+
+        $performeurId = $_POST['performeur_id'] ?? null;
+        $nom = $_POST['nom_performeur'] ?? null;
+        $prenom = $_POST['prenom_performeur'] ?? null;
+        $roleId = $_POST['role_performeur_id'] ?? null;
+
+        if (empty($performeurId))
+        {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => "L'identifiant du performeur est requis."]);
+            return false;
+        }
+
+        $performeur = new Performeur($performeurId);
+
+        $success = true;
+
+        if ($nom !== null && $prenom !== null)
+        {
+            $performeurDTO = new PerformeurData($nom, $prenom, (int)($roleId ?? 0));
+            $success = $performeur->modifierNomPrenom($performeurDTO);
+        }
+
+        if ($roleId !== null)
+        {
+            $success = $success && $performeur->modifierRole((int)$roleId);
+        }
+
+        if ($success)
+        {
+            http_response_code(200);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success', 'message' => "Performeur modifié avec succès"]);
+            return true;
+        }
+        else
+        {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => "Impossible de modifier le performeur."]);
+            return false;
+        }
+    }
+
 }
