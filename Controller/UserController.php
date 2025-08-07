@@ -142,4 +142,75 @@ class UserController
             'currentPage' => $page
         ]);
     }
+
+    /**
+     * Désactive/réactive un utilisateur
+     * Route: POST /user/toggle
+     */
+    public function toggleStatus() 
+    {
+        if (!UserConnectionUtils::isAdminConnected()) 
+        {
+            // Définir un code HTTP 405 (Unauthorized)
+            http_response_code(401);
+
+            // On setup le message d'erreur pour la vue
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Il faut se connecter en tant qu'administrateur pour visionner cette page."));
+            return false;
+        }
+
+        if (RequestUtils::isPostMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+        
+        header('Content-Type: application/json');
+
+        // Définir un code HTTP 400 (Bad Request) par défaut 
+        http_response_code(400);
+        $userId = $_POST['id'] ?? null;
+
+        if (empty($userId))
+        {
+            return false;
+        }
+
+        $userActivity = new UserActivity($userId);
+        if ($userActivity->storeUserActivity() == false)
+        {
+            return false;
+        }
+        
+        $result = $userActivity->toggleUserActivity();
+        if ($result)
+        {
+            // Définir un code HTTP 200 (Succès)
+            http_response_code(200);
+            $newStatus = $userActivity->getUserActif();
+            $statusText = $newStatus ? 'activé' : 'désactivé';
+            echo json_encode([
+                'status' => "success",
+                'message' => "Utilisateur " . $statusText . " avec succès",
+                'actif' => $newStatus
+            ]);
+
+            return true;
+        }
+        else
+        {
+            // Définir un code HTTP 500 (Server Error)
+            http_response_code(500);
+            echo json_encode([
+                    'status' => "error",
+                    'message' => "Une erreur s'est produite. Veuillez réessayer plus tard."
+                ]);
+        }
+
+        return false;
+    }
 } 
