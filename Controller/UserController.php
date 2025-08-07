@@ -57,4 +57,41 @@ class UserController
         $viewRenderer = new ViewRenderer("View/UserViewList.php", $viewData);
         $viewRenderer->render();
     }
+
+    public function listAccess()
+    {
+        if (!UserConnectionUtils::isAdminConnected())
+        {
+            http_response_code(400);
+            ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
+            return false;
+        }
+
+        if (RequestUtils::isPostMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = max(UserList::LimitDefault, (int)($_GET['limit'] ?? UserList::LimitDefault));
+
+        $userList = new UserList($page, $limit);
+        $userList->storePendingValidationUserList();
+
+        $viewData = 
+        [
+            'users' => $userList->getUsers(),
+            'totalPages' => $userList->getTotalPages(),
+            'totalUsers' => $userList->getTotalUsers(),
+            'currentPage' => $page
+        ];
+
+        $viewRenderer = new ViewRenderer("View/UserAccessList.php", $viewData);
+        $viewRenderer->render();
+    }
 } 
