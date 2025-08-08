@@ -364,15 +364,21 @@ class AuthController
      */
     public function logout()
     {
-        $_SESSION = [];
+        if (UserConnectionUtils::isUserConnected() == false)
+        {
+            http_response_code(400);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Il faut être connecté pour se déconnecter"));
+            return false;
+        }
 
+        // Destruction de la session
+        $_SESSION = [];
         session_destroy();
 
-        // Redirection facultative pour les tests
-        if (RequestUtils::isGetMethod())
-        {
-            header('Location: ' . BASE_URL . '/');
-        }
+        // Redirection là ou le DashboardController choisit
+        header('Location: ' . BASE_URL . '/');
+        
+        return true;
     }
 }
 
