@@ -146,5 +146,50 @@ class SeanceController
         }
     }
 
+    /**
+     * Route: POST /seance/delete
+     * Supprime une séance
+     */
+    public function deleteSeance()
+    {
+        if (RequestUtils::isPostMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour supprimer une séance."));
+            return false;
+        }
 
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $seanceId = $_POST['seance_id'] ?? null;
+
+        if (empty($seanceId))
+        {
+            echo json_encode(['status' => 'error', 'message' => "Identifiant de la séance manquant."]);
+            return false;
+        }
+
+        $seanceId = filter_var($seanceId, FILTER_VALIDATE_INT);
+        if ($seanceId === false)
+        {
+            echo json_encode(['status' => 'error', 'message' => "Identifiant de la séance invalide."]);
+            return false;
+        }
+
+        $seance = new Seance($seanceId);
+        $success = $seance->supprimerSeance();
+
+        if ($success)
+        {
+            http_response_code(200);
+            echo json_encode(['status' => 'success', 'message' => "Séance supprimée avec succès"]);
+            return true;
+        }
+        else
+        {
+            echo json_encode(['status' => 'error', 'message' => "Impossible de supprimer la séance."]);
+            return false;
+        }
+    }
 }
