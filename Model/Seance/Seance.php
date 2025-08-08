@@ -56,4 +56,24 @@ class Seance
         // Vérifie si une ligne a été modifiée
         return $stmt->rowCount() > 0;
     }
+
+    public function annulerSeance()
+    {
+        $query = "UPDATE Seance SET statut_seance_id = 2 WHERE seance_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$this->seanceId]);
+
+        // Vérifie si une ligne a été modifiée
+        return $stmt->rowCount() > 0;
+    }
+
+    public function supprimerSeance()
+    {
+        $query = "DELETE FROM Seance WHERE seance_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$this->seanceId]);
+
+        // Vérifie si une ligne a été modifiée
+        return $stmt->rowCount() > 0;
+    }
 }
