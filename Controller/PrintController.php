@@ -31,5 +31,32 @@ class PrintController
         return true;
 
      }  
-     
+
+      /**
+     * GET /spectacle/print?id={id}
+     */
+    private function printSpectacle(int $id)
+    {
+        if (UserConnectionUtils::isUserConnected() == false)
+        {
+            return false;
+        }
+
+        if (RequestUtils::isGetMethod() == false)
+        {
+            return false;
+        }
+
+        if (empty($id))
+        {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => "ID spectacle invalide"]);
+            return false;
+        }
+
+        SpectaclePrinter::generateSingleSpectaclePDF((int)$id);
+        return true;
+    }
+
  }
