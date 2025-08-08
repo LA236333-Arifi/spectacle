@@ -30,8 +30,21 @@ class Seance
         return null;
     }
 
+    public function isDateSeancePlanifiee($date)
+    {
+        $query = "SELECT COUNT(*) FROM Seance WHERE date_soiree_seance = ? AND statut_seance_id = 1";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$date]);
+        return $stmt->fetchColumn() > 0;
+    }
+
     public function ajouterSeance(SeanceData $data)
     {
+        if ($this->isDateSeancePlanifiee($data->getDateSoiree()))
+        {
+            return false;
+        }
+
         $query = "INSERT INTO Seance (date_soiree_seance, date_ajout_seance, utilisateur_id, statut_seance_id, spectacle_id) VALUES (?, NOW(), ?, ?, ?)";
         $stmt = $this->pdo->prepare($query);
         if ($stmt->execute([
@@ -46,14 +59,17 @@ class Seance
         }
         return false;
     }
-    
+
     public function deplacerSeance($nouvelleDate)
     {
+        if ($this->isDateSeancePlanifiee($nouvelleDate))
+        {
+            return false;
+        }
+
         $query = "UPDATE Seance SET date_soiree_seance = ? WHERE seance_id = ?";
         $stmt = $this->pdo->prepare($query);
         $stmt->execute([$nouvelleDate, $this->seanceId]);
-
-        // Vérifie si une ligne a été modifiée
         return $stmt->rowCount() > 0;
     }
 
