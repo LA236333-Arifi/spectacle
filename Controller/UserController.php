@@ -191,12 +191,12 @@ class UserController
         {
             // Définir un code HTTP 200 (Succès)
             http_response_code(200);
-            $newStatus = $userActivity->getUserActif();
+            $newStatus = $userActivity->isUserStatutActif();
             $statusText = $newStatus ? 'activé' : 'désactivé';
             echo json_encode([
                 'status' => "success",
                 'message' => "Utilisateur " . $statusText . " avec succès",
-                'actif' => $newStatus
+                'actif' => $userActivity->getUserStatut()
             ]);
 
             return true;
