@@ -54,4 +54,51 @@ class SeanceController
         }
     }
 
+    /**
+     * Route: POST /seance/move
+     * Déplace une séance (change la date)
+     */
+    public function moveSeance()
+    {
+        if (RequestUtils::isPostMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour déplacer une séance."));
+            return false;
+        }
+
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $seanceId = $_POST['seance_id'] ?? null;
+        $nouvelleDate = $_POST['nouvelle_date_soiree'] ?? null;
+
+        if (empty($seanceId) || empty($nouvelleDate))
+        {
+            echo json_encode(['status' => 'error', 'message' => "Paramètres manquants pour déplacer la séance."]);
+            return false;
+        }
+
+        $seanceId = filter_var($seanceId, FILTER_VALIDATE_INT);
+
+        if ($seanceId === false)
+        {
+            echo json_encode(['status' => 'error', 'message' => "Identifiant de la séance invalide."]);
+            return false;
+        }
+
+        $seance = new Seance($seanceId);
+        $success = $seance->deplacerSeance($nouvelleDate);
+
+        if ($success)
+        {
+            echo json_encode(['status' => 'success', 'message' => "Séance déplacée avec succès"]);
+            return true;
+        }
+        else
+        {
+            echo json_encode(['status' => 'error', 'message' => "Impossible de déplacer la séance."]);
+            return false;
+        }
+    }
 }
