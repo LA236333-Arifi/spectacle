@@ -83,4 +83,93 @@ class SpectaclePrinter
         $html .= "</body></html>";
         return $html;
     }
+
+    public static function generateSpectaclePDF()
+    {
+        $spectacles = self::getProgrammedSpectacles();
+        if (empty($spectacles))
+        {
+            return false;
+        }
+
+        $html = self::generateSpectaclesHtml($spectacles);
+
+        // Configuration Dompdf
+        $options = new Options();
+        $options->set('defaultFont', 'Helvetica');
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Ajout pagination visuelle
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('Helvetica');
+        $canvas->page_text(520, 820, "Page {PAGE_NUM} / {PAGE_COUNT}", $font, 10, [0, 0, 0]);
+
+        // Envoi du PDF au navigateur
+        $dompdf->stream("liste_spectacles.pdf", ["Attachment" => false]);
+        return true;
+    }
+
+    private static function getProgrammedSpectacles(): array
+    {
+        $db = Database::getInstance()->getConnection();
+
+        // 1. Récupérer tous les spectacles avec statut < 2
+        $sql = "SELECT s.spectacle_id, s.nom_spectacle, s.texte_accroche_spectacle,
+                    s.prix_spectacle, s.duree_minutes_spectacle, 
+                    s.type_spectacle_id, s.groupe_id,
+                    ts.nom_type_spectacle, gs.nom_groupe
+                FROM Spectacle s
+                INNER JOIN Type_Spectacle ts ON s.type_spectacle_id = ts.type_spectacle_id
+                INNER JOIN Groupe_Spectacle gs ON s.groupe_id = gs.groupe_id
+                WHERE s.statut_spectacle_id < 2
+                ORDER BY s.date_creation_spectacle ASC";
+        
+        $stmt = $db->query($sql);
+        $spectacles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($spectacles as &$spectacle)
+        {
+            $spectacleId = $spectacle['spectacle_id'];
+            $groupeId = $spectacle['groupe_id'];
+            $typeSpectacleId = (int)$spectacle['type_spectacle_id'];
+
+            // 2. Dates de programmation
+            $stmt = $db->prepare("SELECT DATE_FORMAT(se.date_soiree_seance, '%d/%m/%Y') AS date
+                                FROM Seance se
+                                WHERE se.spectacle_id = :id
+                                ORDER BY se.date_soiree_seance ASC");
+            $stmt->execute(['id' => $spectacleId]);
+            $spectacle['dates_programmation'] = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'date');
+
+            // 3. Membres du groupe
+            $stmt = $db->prepare("SELECT ps.nom_performeur, ps.prenom_performeur
+                                FROM Liaison_Groupe lg
+                                INNER JOIN Performeur_Spectacle ps ON ps.performeur_id = lg.performeur_id
+                                WHERE lg.groupe_id = :gid");
+            $stmt->execute(['gid' => $groupeId]);
+            $spectacle['membres_groupe'] = array_map(
+                fn($p) => $p['prenom_performeur'] . ' ' . $p['nom_performeur'],
+                $stmt->fetchAll(PDO::FETCH_ASSOC)
+            );
+
+            // 4. Auteur / Metteur en scène — seulement si le type correspond
+            if (in_array($typeSpectacleId, [SpectacleType::Danse, SpectacleType::Humoriste, SpectacleType::Theatre])) {
+                $stmt = $db->prepare("SELECT nom_auteur, nom_metteur_en_scene
+                                    FROM Auteur_Spectacle
+                                    WHERE spectacle_id = :id");
+                $stmt->execute(['id' => $spectacleId]);
+                $auteur = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $spectacle['nom_auteur'] = $auteur['nom_auteur'] ?? null;
+                $spectacle['nom_metteur_en_scene'] = $auteur['nom_metteur_en_scene'] ?? null;
+            }
+        }
+
+        return $spectacles;
+    }
  }
