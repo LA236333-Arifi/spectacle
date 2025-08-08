@@ -290,4 +290,26 @@ class SpectaclePrinter
 
         return $html;
     }
+
+    public static function generateSingleSpectaclePDF(int $spectacleId)
+    {
+        $html = self::generateSingleSpectacleHtml($spectacleId);
+
+        $options = new Options();
+        $options->set('defaultFont', 'Helvetica');
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // Ajout pagination visuelle
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('Helvetica');
+        $canvas->page_text(520, 820, "Page {PAGE_NUM} / {PAGE_COUNT}", $font, 10, [0, 0, 0]);
+
+        $dompdf->stream("fiche_spectacle_$spectacleId.pdf", ["Attachment" => false]);
+        return true;
+    }
  }
