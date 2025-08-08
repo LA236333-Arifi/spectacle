@@ -58,5 +58,20 @@ class PrintController
         SpectaclePrinter::generateSingleSpectaclePDF((int)$id);
         return true;
     }
+     
 
+     /**
+     * GET /spectacle/print/all
+     */
+    public function printList()
+    {
+        // L'admin et le secretaire peut générer un pdf, donc on utilise "isUserConnected()"
+        if (UserConnectionUtils::isUserConnected() == false)
+        {
+            return false;
+        }
+
+        $listSpectacles = SpectaclePrinter::generateSpectaclePDF();
+        return !empty($listSpectacles);
+    }
  }
