@@ -56,7 +56,6 @@ CREATE TABLE Utilisateur(
    prenom_utilisateur VARCHAR(50),
    mail_utilisateur VARCHAR(50) NOT NULL,
    mdp_utilisateur VARCHAR(128),
-   valide_utilisateur LOGICAL,
    token_utilisateur VARCHAR(64),
    date_exp_token_utilisateur DATETIME,
    statut_utilisateur_id INT NOT NULL,
