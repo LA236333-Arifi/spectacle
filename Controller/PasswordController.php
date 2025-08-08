@@ -154,5 +154,130 @@ class PasswordController
             return false;
         }
     }
+      
+      // Fonction pour changer le mot de passe
+    public function changePassword()
+    {
+        // Définir un code HTTP 400 (Bad Request) par défaut
+        http_response_code(400);
 
+        // Vérifier si la requête est en POST
+        if (RequestUtils::isPostMethod()) 
+        {
+            // On renvoie du JSON par défaut (AJAX)
+            header("Content-Type: application/json");
+
+            // Vérification du token CSRF
+            if (!$this->security->checkCSRFToken($_POST['csrf_token'] ?? ''))
+            {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => "Token CSRF invalide."
+                ]);
+                return false;
+            }
+
+            // On vérifie qu'on a bien le nouveau mot de passe
+            $newPassword = $_POST['new_password'] ?? null;
+            if (empty($newPassword)) 
+            {
+                // Réponse JSON avec le message d'erreur
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Mot de passe manquant.'
+                ]);
+                return false;
+            }
+
+            // On vérifie qu'on a bien le token associé
+            $tokenValue = $_POST['token'] ?? null;
+
+            // On crée l'objet de token
+            $token = new TokenResetPassword($tokenValue);
+
+            // On vérifie qu'on a bien un token valide. UserId est null si le result est false
+            $stored = $token->storeUserIdWithValidToken();
+            if ($stored === false)
+            {
+                // Réponse JSON avec le message d'erreur
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Token invalide ou expiré. Impossible de charger la page'
+                    ]);
+                return false;
+            }
+
+            // Vérifier la robustesse du mot de passe
+            if (!UserDataValidator::verifyStrongPassword($newPassword)) 
+            {
+                // Réponse JSON avec le message d'erreur
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre."
+                ]);
+                return false;
+            }
+
+            // Mise à jour du mot de passe dans la base de donnéess
+            if (UserCredentials::updateUserPasswordById($token->getUserId(), $newPassword)) {
+                // Définir un code HTTP 200 (Succès) par défaut
+                http_response_code(200);
+
+                // Reset le token après modification
+                $token->resetUserToken();
+
+                // Réponse JSON avec le message de succès
+                echo json_encode([
+                    'status' => 'success',
+                    'message' => 'Votre mot de passe a été changé avec succès.',
+                    'redirect' => BASE_URL . '/connexion'
+                ]);
+                return true;
+            } 
+            else 
+            {
+                // Réponse JSON avec le message d'erreur
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Une erreur est survenue, veuillez réessayer plus tard.'
+                ]);
+                return false;
+            }
+        } 
+        else if (RequestUtils::isGetMethod()) 
+        {
+            // Affiche la page si la méthode n'est pas POST (en cas de simple visite de la page)
+            $tokenValue = $_GET['token'] ?? null;
+
+            $token = new TokenResetPassword($tokenValue);
+
+            // On vérifie qu'on a bien un token valide
+            $userId = $token->isTokenValid();
+            if ($userId === false)
+            {
+                // On setup le message d'erreur pour la vue
+                ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Token invalide ou expiré"));
+                return false;
+            }
+
+            // Définir un code HTTP 200 (succès)
+            http_response_code(200);
+
+            // Génération du token csrf 
+            $csrf_token = $this->security->genererCSRFToken();
+            $viewRenderer = new ViewRenderer("View/ChangerPassword.php", ['token_csrf' => $csrf_token]);
+            $viewRenderer->render();
+            return true;
+        }
+        else
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+    }
 }
