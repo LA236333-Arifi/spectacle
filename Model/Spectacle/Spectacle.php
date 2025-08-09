@@ -180,4 +180,92 @@ class Spectacle
         }
     }
 
+    public function modifySpectacle(array $data)
+    {
+        if (empty($this->spectacleId))
+        {
+            return false;
+        }
+
+        $pdo = Database::getInstance()->getConnection();
+
+        // Champs modifiables dans Spectacle
+        $allowedFields = [
+            'nom_spectacle',
+            'texte_accroche_spectacle',
+            'prix_spectacle',
+            'duree_minutes_spectacle',
+            'statut_spectacle_id',
+            'utilisateur_id',
+            'groupe_id',
+            'type_spectacle_id'
+        ];
+
+        $fieldsToUpdate = [];
+        $params = [];
+
+        foreach ($data as $key => $value)
+        {
+            if (in_array($key, $allowedFields))
+            {
+                $fieldsToUpdate[] = "$key = ?";
+                $params[] = $value;
+            }
+        }
+
+        // Toujours mettre à jour la date de modification
+        $fieldsToUpdate[] = "derniere_date_modification_spectacle = NOW()";
+
+        if (empty($fieldsToUpdate))
+        {
+            return false;
+        }
+
+        $query = "UPDATE Spectacle SET " . implode(', ', $fieldsToUpdate) . " WHERE spectacle_id = ?";
+        $params[] = $this->spectacleId;
+
+        try
+        {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare($query);
+            $stmt->execute($params);
+
+            // Mettre à jour Auteur_Spectacle si les champs sont présents
+            $updateAuteur = false;
+            $auteurFields = [];
+            $auteurParams = [];
+
+            if (isset($data['nom_auteur']))
+            {
+                $auteurFields[] = "nom_auteur = ?";
+                $auteurParams[] = $data['nom_auteur'];
+                $updateAuteur = true;
+            }
+            if (isset($data['nom_metteur_en_scene']))
+            {
+                $auteurFields[] = "nom_metteur_en_scene = ?";
+                $auteurParams[] = $data['nom_metteur_en_scene'];
+                $updateAuteur = true;
+            }
+
+            if ($updateAuteur && !empty($auteurFields))
+            {
+                $auteurQuery = "UPDATE Auteur_Spectacle SET " . implode(', ', $auteurFields) . " WHERE spectacle_id = ?";
+                $auteurParams[] = $this->spectacleId;
+                $stmt = $pdo->prepare($auteurQuery);
+                $stmt->execute($auteurParams);
+            }
+
+            $pdo->commit();
+            return true;
+        }
+        catch (Exception $e)
+        {
+            $pdo->rollBack();
+            error_log("Erreur lors de la modification du spectacle : " . $e->getMessage());
+            return false;
+        }
+    }
+
 }
