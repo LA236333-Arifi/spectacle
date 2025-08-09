@@ -268,4 +268,59 @@ class Spectacle
         }
     }
 
+    public function cloturerSpectacle()
+    {
+        if (isset($this->spectacleId) == false)
+        {
+            return false;
+        }
+
+        $pdo = Database::getInstance()->getConnection();
+
+        $query = "UPDATE Spectacle 
+                SET statut_spectacle_id = 3, date_cloture_spectacle = NOW() 
+                WHERE spectacle_id = ?";
+        $stmt = $pdo->prepare($query);
+        return $stmt->execute([$this->spectacleId]);
+    }
+
+    public function deleteSpectacle()
+    {
+        if (empty($this->spectacleId)) 
+        {
+            return false;
+        }
+
+        $pdo = Database::getInstance()->getConnection();
+
+        try 
+        {
+            $pdo->beginTransaction();
+
+            $querySeance = "DELETE FROM Seance WHERE spectacle_id = ?";
+            $queryAuteur = "DELETE FROM Auteur_Spectacle WHERE spectacle_id = ?";
+            $querySpectacle = "DELETE FROM Spectacle WHERE spectacle_id = ?";
+            
+            // Supprimer toutes les séances liées au spectacle
+            $stmt = $pdo->prepare($querySeance);
+            $stmt->execute([$this->spectacleId]);
+
+            // Supprimer l'auteur lié au spectacle
+            $stmt = $pdo->prepare($queryAuteur);
+            $stmt->execute([$this->spectacleId]);
+
+            // Supprimer le spectacle
+            $stmt = $pdo->prepare($querySpectacle);
+            $stmt->execute([$this->spectacleId]);
+
+            $pdo->commit();
+            return true;
+        } 
+        catch (Exception $e) 
+        {
+            $pdo->rollBack();
+            error_log("Erreur lors de la suppression du spectacle : " . $e->getMessage());
+            return false;
+        }
+    }
 }
