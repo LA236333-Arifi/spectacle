@@ -14,4 +14,9 @@ class SpectacleType
     {
         return $type > self::Invalid && $type < self::Max;
     }
+
+    public static function needsAuteur($type)
+    {
+        return in_array($type, [self::Theatre, self::Humoriste, self::Danse]);  
+    }
 }
