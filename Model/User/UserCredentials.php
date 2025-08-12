@@ -103,13 +103,13 @@ class UserCredentials extends User
      */
     public function insertUser(): bool
     {   
-        $query = "INSERT INTO utilisateurs (nom_utilisateur, prenom_utilisateur,  mail_utilisateur, mdp_utilisateur, actif_utilisateur, role_utilisateur_id) VALUES (?, ?, ?, ?, ?)";
+        $query = "INSERT INTO utilisateurs (nom_utilisateur, prenom_utilisateur,  mail_utilisateur, mdp_utilisateur, statut_utilisateur_id, role_utilisateur_id) VALUES (?, ?, ?, ?, ?)";
         
         // On hash le mot de passe pour convenir aux standards de sécurité
         $hashedPassword = password_hash($this->userData->getMdpUtilisateur(), PASSWORD_DEFAULT);
         
         // Quand on ajoute un user, il est par défaut actif. C'est seulement plus tard qu'on peut le désactiver si on veut
-        $actifDefaultValue = 1;
+        $actifDefaultValue = UserStatut::Valide_Et_Actif;
 
         try 
         {

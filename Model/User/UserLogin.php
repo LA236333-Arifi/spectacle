@@ -46,7 +46,7 @@ class UserLogin extends User
         $pdo = Database::getInstance()->getConnection();
 
         // Vérifier si l'email existe dans la base de données
-        $stmt = $pdo->prepare("SELECT utilisateur_id FROM utilisateur WHERE mail_utilisateur = :email AND actif_utilisateur = 1");
+        $stmt = $pdo->prepare("SELECT utilisateur_id FROM utilisateur WHERE mail_utilisateur = :email AND statut_utilisateur_id = 3");
 
         // Liaison du paramètre
         $stmt->bindParam(':email', $this->email, PDO::PARAM_STR);
@@ -65,7 +65,7 @@ class UserLogin extends User
         $requete = $pdo->prepare("
             SELECT mdp_utilisateur
             FROM utilisateur 
-            WHERE mail_utilisateur = ? AND actif_utilisateur = 1");
+            WHERE mail_utilisateur = :email AND statut_utilisateur_id = 3");
 
         $requete->bindParam(':email', $this->email);
         $requete->execute();
@@ -86,7 +86,7 @@ class UserLogin extends User
         $requete = $pdo->prepare("
             SELECT nom_utilisateur, prenom_utilisateur, role_utilisateur_id
             FROM utilisateur 
-            WHERE mail_utilisateur = ? AND actif_utilisateur = 1");
+            WHERE mail_utilisateur = ? AND statut_utilisateur_id = 3");
 
         $requete->bindParam(':email', $this->email);
         $requete->execute();
