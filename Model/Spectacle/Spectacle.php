@@ -221,41 +221,83 @@ class Spectacle
             return false;
         }
 
-        $query = "UPDATE Spectacle SET " . implode(', ', $fieldsToUpdate) . " WHERE spectacle_id = ?";
-        $params[] = $this->spectacleId;
+        // Récupérer l'ancien type de spectacle
+        $queryType = "SELECT type_spectacle_id FROM Spectacle WHERE spectacle_id = ?";
+        $stmtType = $pdo->prepare($queryType);
+        $stmtType->execute([$this->spectacleId]);
+        $oldType = (int)$stmtType->fetchColumn();
+
+        $newType = isset($data['type_spectacle_id']) ? (int)$data['type_spectacle_id'] : $oldType;
 
         try
         {
             $pdo->beginTransaction();
 
+            // Si on passe d'un type avec auteur/metteur en scène à un type sans, on supprime la ligne Auteur_Spectacle
+            if (SpectacleType::needsAuteur($oldType) && !SpectacleType::needsAuteur($newType))
+            {
+                $queryDeleteAuteur = "DELETE FROM Auteur_Spectacle WHERE spectacle_id = ?";
+                $stmtDeleteAuteur = $pdo->prepare($queryDeleteAuteur);
+                $stmtDeleteAuteur->execute([$this->spectacleId]);
+            }
+
+            // Si on passe d'un type sans auteur/metteur en scène à un type avec, on doit vérifier la présence des champs
+            if (!SpectacleType::needsAuteur($oldType) && SpectacleType::needsAuteur($newType))
+            {
+                if (empty($data['nom_auteur']) || empty($data['nom_metteur_en_scene']))
+                {
+                    $pdo->rollBack();
+                    return false;
+                }
+
+                // On insère la ligne Auteur_Spectacle
+                $queryInsertAuteur = "INSERT INTO Auteur_Spectacle (nom_auteur, nom_metteur_en_scene, spectacle_id) VALUES (?, ?, ?)";
+                $stmtInsertAuteur = $pdo->prepare($queryInsertAuteur);
+                $stmtInsertAuteur->execute([
+                    $data['nom_auteur'],
+                    $data['nom_metteur_en_scene'],
+                    $this->spectacleId
+                ]);
+            }
+
+            // Si on tente de modifier nom_auteur ou nom_metteur_en_scene alors que le type est 2 ou 3, on annule
+            if (!SpectacleType::needsAuteur($newType) && (isset($data['nom_auteur']) || isset($data['nom_metteur_en_scene'])))
+            {
+                $pdo->rollBack();
+                return false;
+            }
+
+            // Vérification lors de la modification de nom_auteur ou nom_metteur_en_scene
+            if (SpectacleType::needsAuteur($newType))
+            {
+                $auteurFields = [];
+                $auteurParams = [];
+
+                if (isset($data['nom_auteur']))
+                {
+                    $auteurFields[] = "nom_auteur = ?";
+                    $auteurParams[] = $data['nom_auteur'];
+                }
+                if (isset($data['nom_metteur_en_scene']))
+                {
+                    $auteurFields[] = "nom_metteur_en_scene = ?";
+                    $auteurParams[] = $data['nom_metteur_en_scene'];
+                }
+
+                if (!empty($auteurFields))
+                {
+                    $auteurQuery = "UPDATE Auteur_Spectacle SET " . implode(', ', $auteurFields) . " WHERE spectacle_id = ?";
+                    $auteurParams[] = $this->spectacleId;
+                    $stmtAuteur = $pdo->prepare($auteurQuery);
+                    $stmtAuteur->execute($auteurParams);
+                }
+            }
+
+            $query = "UPDATE Spectacle SET " . implode(', ', $fieldsToUpdate) . " WHERE spectacle_id = ?";
+            $params[] = $this->spectacleId;
+
             $stmt = $pdo->prepare($query);
             $stmt->execute($params);
-
-            // Mettre à jour Auteur_Spectacle si les champs sont présents
-            $updateAuteur = false;
-            $auteurFields = [];
-            $auteurParams = [];
-
-            if (isset($data['nom_auteur']))
-            {
-                $auteurFields[] = "nom_auteur = ?";
-                $auteurParams[] = $data['nom_auteur'];
-                $updateAuteur = true;
-            }
-            if (isset($data['nom_metteur_en_scene']))
-            {
-                $auteurFields[] = "nom_metteur_en_scene = ?";
-                $auteurParams[] = $data['nom_metteur_en_scene'];
-                $updateAuteur = true;
-            }
-
-            if ($updateAuteur && !empty($auteurFields))
-            {
-                $auteurQuery = "UPDATE Auteur_Spectacle SET " . implode(', ', $auteurFields) . " WHERE spectacle_id = ?";
-                $auteurParams[] = $this->spectacleId;
-                $stmt = $pdo->prepare($auteurQuery);
-                $stmt->execute($auteurParams);
-            }
 
             $pdo->commit();
             return true;
@@ -277,11 +319,23 @@ class Spectacle
 
         $pdo = Database::getInstance()->getConnection();
 
+        // Mettre à jour le statut du spectacle et la date de clôture
         $query = "UPDATE Spectacle 
                 SET statut_spectacle_id = 3, date_cloture_spectacle = NOW() 
                 WHERE spectacle_id = ?";
         $stmt = $pdo->prepare($query);
-        return $stmt->execute([$this->spectacleId]);
+        $success = $stmt->execute([$this->spectacleId]);
+
+        // Mettre toutes les séances à venir au statut "Annulé" (2)
+        $querySeance = "UPDATE Seance 
+                        SET statut_seance_id = 2 
+                        WHERE spectacle_id = ? 
+                        AND date_soiree_seance > NOW() 
+                        AND statut_seance_id != 2";
+        $stmtSeance = $pdo->prepare($querySeance);
+        $success &= $stmtSeance->execute([$this->spectacleId]);
+
+        return $success;
     }
 
     public function deleteSpectacle()
