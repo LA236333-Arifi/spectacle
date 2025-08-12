@@ -141,4 +141,40 @@ class SpectacleController
         return true;
     }
 
+     /**
+     * Supprime de la DB le spectacle ainsi que les séances et auteur/metteur en scène
+     * Utilisé si le spectacle est complètement annulé et donc n'a plus lieu d'être.
+     * 
+     * Pour l'instant, on n'utilise pas cette fonctionnalité pour conserver l'intègrité 
+     * des données (mêmes si en théorie, les données devraient rester intègres)
+     */
+    public function supprimer()
+    {
+        if ($this->check_POST_Admin_CSRF() == false)
+        {
+            return false;
+        }
+
+        header('Content-Type: application/json');
+
+        $spectacle = new Spectacle();
+        if ($spectacle->deleteSpectacle() == false)
+        {
+            http_response_code(400);
+            echo json_encode([
+                    'status' => 'error',
+                    'message' => "Le spectacle n'a pas pu être supprimé."
+                ]);
+            return false;
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => "Le spectacle a été supprimé avec succès."
+        ]);
+
+        return true;
+    }
+
+
 }    
