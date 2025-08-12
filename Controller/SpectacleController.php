@@ -83,7 +83,7 @@ class SpectacleController
         return true;
     }
 
-        public function modifier()
+    public function modifier()
     {
         if ($this->check_POST_Admin_CSRF() == false)
         {
@@ -112,7 +112,7 @@ class SpectacleController
         return true;
     }
 
-        public function cloturer()
+    public function cloturer()
     {
         if ($this->check_POST_Admin_CSRF() == false)
         {
@@ -216,13 +216,6 @@ class SpectacleController
             return false;
         }
 
-        if (UserConnectionUtils::isAdminConnected() == false)
-        {
-            http_response_code(403);
-            ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
-            return false;
-        }
-
         http_response_code(400);
         header('Content-Type: application/json');
 
@@ -264,13 +257,6 @@ class SpectacleController
      */
     public function search()
     {
-        if (UserConnectionUtils::isAdminConnected() == false)
-        {
-            http_response_code(403);
-            ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
-            return false;
-        }
-
         if (RequestUtils::isGetMethod() == false)
         {
             http_response_code(405);
@@ -301,5 +287,4 @@ class SpectacleController
         ]);
         return true;
     }
-
 }    
