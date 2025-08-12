@@ -1,1 +1,3 @@
-- Créer le script de la DB
+TODO: Ajouter les vérifications token CSRF dans le UserController
+
+TODO: Urgent! Ecrire les tests des controllers
