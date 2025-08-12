@@ -1,12 +1,5 @@
 <?php
 
-require_once 'Model/Utils/RequestUtils.php';
-require_once 'Model/EmailSender.php';
-require_once 'Model/Role.php';
-require_once 'Model/User/UserCredentials.php';
-require_once 'Model/User/UserLogin.php';
-require_once 'Templates/WelcomeEmail.php';
-
 /**
  * Contrôleur d'authentification moderne
  * Gère la connexion, inscription, et réinitialisation de mot de passe
