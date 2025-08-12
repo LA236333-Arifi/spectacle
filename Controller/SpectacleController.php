@@ -204,4 +204,59 @@ class SpectacleController
         return true;
     }
 
+    /**
+     * Permet de visualiser les informations d'un spectacle
+     */
+    public function viewSpectacle()
+    {
+        if (RequestUtils::isGetMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
+            return false;
+        }
+
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $spectacleId = $_GET['id'] ?? null;
+        $spectacleId = filter_var($spectacleId, FILTER_VALIDATE_INT);
+
+        if (empty($spectacleId) || $spectacleId === false)
+        {
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Identifiant du spectacle invalide."
+            ]);
+            return false;
+        }
+
+        $viewer = new SpectacleViewer();
+        $spectacle = $viewer->getSpectacleById($spectacleId);
+
+        if (!$spectacle)
+        {
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Spectacle introuvable."
+            ]);
+            return false;
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            'status' => 'success',
+            'spectacle' => $spectacle
+        ]);
+        return true;
+    }
+
+
 }    
