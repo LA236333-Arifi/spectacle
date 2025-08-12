@@ -259,4 +259,47 @@ class SpectacleController
     }
 
 
+    /**
+     * Permet d'avoir la liste des spectacles qui conviennent à une recherche
+     */
+    public function search()
+    {
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
+            return false;
+        }
+
+        if (RequestUtils::isGetMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+
+        header('Content-Type: application/json');
+
+        $query = trim($_GET['query'] ?? '');
+        if (empty($query))
+        {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Champ de recherche vide.'
+            ]);
+            return false;
+        }
+
+        $spectacleSearch = new SpectacleSearch();
+        $results = $spectacleSearch->search($query);
+
+        echo json_encode([
+            'status' => 'success',
+            'results' => $results,
+            'totalResults' => count($results)
+        ]);
+        return true;
+    }
+
 }    
