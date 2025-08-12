@@ -84,28 +84,56 @@ $pageNonTrouvee = false;
 
 switch ($segments[0] ?? '/') 
 {
+    // DashboardController
     case '/':
+    case 'dashboard':
     case 'index.php':
     case 'index.html':
+    case 'index':
+        (new DashboardController())->index();
         break;
 
-    case '/dashboard':
+    // GET - Affiche la page de programmation
+    case 'programmation':
+        (new DashboardController())->programmation();
         break;
-
-    case 'login':
+    
+    // GET - Affiche la page du calendrier
+    case 'calendrier':
+        (new DashboardController())->calendrier();
         break;
+    
 
+    // AuthController
+    // GET - Affiche la page d'inscription
+    // POST - Gère l'inscription d'un utilisateur
     case 'register':
-        break;
-    case '/logout':
+        (new AuthController())->register();
         break;
 
+    // GET - Affiche la page de connexion
+    // POST - Gère la connexion d'un utilisateur
+    case 'login':
+        (new AuthController())->login();
+        break;
+
+    // POST - Gère la déconnexion d'un utilisateur
+    case 'logout':
+        (new AuthController())->logout();
+        break;
+
+    // PasswordController
     case 'password':
         switch ($segments[1] ?? '')
         {
+            // GET - Affiche la page de reset password
             case 'reset':
+                (new PasswordController())->resetPassword();
                 break;
+            
+            // POST - Change le mot de passe si le token est valide
             case 'change':
+                (new PasswordController())->changePassword();
                 break;
             default:
                 $pageNonTrouvee = true;
@@ -113,16 +141,67 @@ switch ($segments[0] ?? '/')
         }
         break;
 
+    // SpectacleController
     case 'spectacle':
         switch ($segments[1] ?? '')
         {
+            // POST -- Ajoute un spectacle à la DB
             case 'add':
+                (new SpectacleController())->ajouter();
                 break;
-            case 'move':
+
+            //POST -- Change les infos du spectacle, de l'auteur/metteur en scène, du groupe associé
+            case 'modify':
+                (new SpectacleController())->modifier();
                 break;
-            case 'delete':
+
+            // POST -- Cloture un spectacle et annule toutes les séances programmées futures
+            case 'cloturer':
+                (new SpectacleController())->cloturer();
                 break;
-            case 'list':
+
+            // POST -- Supprime un spectacle, les séances, l'auteur/metteur en scène.
+            // Mais la fonctionnalité est désactivée pour conserver l'intégrité des données
+            /*case 'delete':
+                (new SpectacleController())->supprimer();
+                break;*/
+
+            // GET -- Affiche les différents spectacles qui matchent la recherche
+            case 'search':
+                (new SpectacleController())->search();
+                break;
+
+            // GET -- Affiche la page des stats de chaque type de spectacle
+            case 'stats':  
+                (new SpectacleController())->stats();
+                break;
+            
+            // GET -- Affiche la page d'information d'un spectacle
+            case 'view':
+                (new SpectacleController())->viewSpectacle();
+                break;
+
+            // GET -- Affiche la page pour télécharger le pdf
+            // POST -- Visionne le PDF et permet de le télécharger  
+            case 'print':
+                if (isset($segments[2]))
+                {
+                    // Soit on spécifie tous les spectacles pour le PDF
+                    if ($segments[2] == 'all')
+                    {
+                        (new PrintController())->printList();
+                    }
+                    else
+                    {
+                        $pageNonTrouvee = true;
+                    }
+                }
+                else
+                {
+                    // Soit on laisse le chemin par défaut et si paramètre $_GET est set
+                    // Alors on visionne le PDF de ce spectacle, sinon on affiche la page
+                    (new PrintController())->index();
+                }
                 break;
             default:
                 $pageNonTrouvee = true;
@@ -133,11 +212,24 @@ switch ($segments[0] ?? '/')
     case 'seance':
         switch ($segments[1] ?? '')
         {
-            case 'list':
-                break;
-            case 'calendar':
-                break;
+            // POST -- Ajoute une séance. Une "instance" d'un spectacle
             case 'add':
+                (new SeanceController())->addSeance();
+                break;
+
+            // POST -- Déplacer une séance déjà existante à une autre date
+            case 'move':
+                (new SeanceController())->moveSeance();
+                break;
+
+            // POST -- Annule une séance
+            case 'cancel':
+                (new SeanceController())->cancelSeance();
+                break;
+
+            // GET -- Affiche la liste de toutes les prochaines séances 
+            case 'list':
+                (new SeanceController())->listSeances();
                 break;
             default:
                 $pageNonTrouvee = true;
@@ -149,13 +241,41 @@ switch ($segments[0] ?? '/')
         switch ($segments[1] ?? '')
         {
             case 'list':
-                break;
-            case 'profil':
+                switch($segments[2] ?? 'users')
+                {
+                    // GET - Affiche la liste des utilisateurs validés
+                    case 'users':
+                        (new UserController())->listUsers();
+                        break;
 
+                    // GET - Affiche la liste des utilisateurs non validés (en attente)
+                    case 'access':
+                        (new UserController())->listAccess();
+                        break;
+                    default:
+                    $pageNonTrouvee = true;
+                    break;
+                }
+                break;
+            
+            // GET - Recherche un utilisateur via son nom/prénom
+            case 'search':
+                (new UserController())->searchUsers();
+                break;
+
+            // POST - active/désactive un utilisateur en inversant son statut courant
+            case 'toggle':
+                (new UserController())->toggleStatus();
+                break;
             default:
+                $pageNonTrouvee = true;
                 break;
         }
         break;
+
+    default:
+    $pageNonTrouvee = true;
+    break;
 }
 
 // Si aucune route ne correspond, alors on affiche la fameuse erreur 404
