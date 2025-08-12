@@ -112,4 +112,33 @@ class SpectacleController
         return true;
     }
 
+        public function cloturer()
+    {
+        if ($this->check_POST_Admin_CSRF() == false)
+        {
+            return false;
+        }
+
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $spectacle = new Spectacle();
+        if ($spectacle->cloturerSpectacle() == false)
+        {
+            echo json_encode([
+                    'status' => 'error',
+                    'message' => "Le spectacle n'a pas pu être cloturé."
+                ]);
+            return false;
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            'status' => 'success',
+            'message' => "Le spectacle a été cloturé avec succès."
+        ]);
+
+        return true;
+    }
+
 }    
