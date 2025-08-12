@@ -27,6 +27,7 @@ class SeanceList
         // Récupérer les séances paginées
         $query = "SELECT seance_id, date_soiree_seance, date_ajout_seance, utilisateur_id, statut_seance_id, spectacle_id
                 FROM Seance
+                WHERE date_soiree_seance >= CURDATE() 
                 ORDER BY date_soiree_seance DESC
                 LIMIT ? OFFSET ?";
         $stmt = $this->pdo->prepare($query);

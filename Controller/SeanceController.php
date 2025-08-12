@@ -192,4 +192,30 @@ class SeanceController
             return false;
         }
     }
+
+    public function listSeances()
+    {
+        if (RequestUtils::isGetMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez GET pour afficher les séances."));
+            return false;
+        }
+
+        header('Content-Type: application/json');
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = 20;
+
+        $seanceList = new SeanceList();
+        $result = $seanceList->getListSeances($page, $limit);
+
+        echo json_encode([
+            'status' => 'success',
+            'page' => $result->getPage(),
+            'total' => $result->getTotal(),
+            'seances' => $result->getSeances()
+        ]);
+        return true;
+    }
 }
