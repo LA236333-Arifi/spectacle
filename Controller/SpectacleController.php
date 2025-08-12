@@ -83,4 +83,33 @@ class SpectacleController
         return true;
     }
 
+        public function modifier()
+    {
+        if ($this->check_POST_Admin_CSRF() == false)
+        {
+            return false;
+        }
+
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $spectacle = new Spectacle();
+        if ($spectacle->modifySpectacle($_POST) == false)
+        {
+            echo json_encode([
+                    'status' => 'error',
+                    'message' => "Le spectacle n'a pas pu être modifié."
+                ]);
+            return false;
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            'status' => 'success',
+            'message' => "Le spectacle a été modifié avec succès."
+        ]);
+
+        return true;
+    }
+
 }    
