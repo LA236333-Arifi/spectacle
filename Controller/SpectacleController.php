@@ -175,6 +175,33 @@ class SpectacleController
 
         return true;
     }
+    
+    /**
+     * Récupère les stats de chaque type de spectacle
+     */
+    public function stats()
+    {
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Il faut être connecté en tant qu'admin pour visualiser cette page."));
+            return false;
+        }
 
+        if (RequestUtils::isGetMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée."));
+            return false;
+        }
+
+        header('Content-Type: application/json');
+
+        $statsModel = new SpectacleStats();
+        $stats = $statsModel->getStats();
+
+        echo json_encode(['status' => 'success', 'stats' => $stats]);
+        return true;
+    }
 
 }    
