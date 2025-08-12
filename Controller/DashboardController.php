@@ -10,7 +10,10 @@ class DashboardController
 
     public function programmation()
     {
-        $viewRenderer = new ViewRenderer("Visitor/Programmation", []);
+        $viewRenderer = new ViewRenderer("Visitor/Programmation", 
+        [
+            'seances' => (new SeanceController())->listSeances()
+        ]);
         $viewRenderer->render();
     }
     
