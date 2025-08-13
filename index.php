@@ -18,21 +18,7 @@ else
     error_reporting(0);
 }
 
-// Autoloading des classes
-spl_autoload_register(function ($class) {
-    $paths = 
-    [
-        __DIR__ . '/Controller/'
-    ];
-    
-    foreach ($paths as $path) {
-        $file = $path . $class . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
-    }
-});
+require_once 'autoload.php';
 
 // Configuration des constantes principales
 define('SITE_NAME', 'Salle de Spectacle');
@@ -59,33 +45,34 @@ define('BASE_URL', rtrim(dirname($_SERVER['SCRIPT_NAME']), '/'));
 // ROUTAGE
 // ===================================
 
-// 1. Nettoyer l'URI
+// 1. Récupère l'URI
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// 2. Retirer correctement le dossier du projet
-$scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+// 2. Récupère le chemin du script (le dossier du projet)
+$scriptDir = dirname($_SERVER['SCRIPT_NAME']);  // Chemin du dossier du projet
 
-// Normaliser les slashs
+// 3. Normalise les slashes (slash unique)
 $uri = '/' . ltrim($uri, '/');
 $scriptDir = '/' . trim($scriptDir, '/');
 
-// 3. Enlever le scriptDir si présent en début d'URI
+// 4. Enlever le scriptDir si présent en début d'URI
 if (stripos($uri, $scriptDir) === 0) {
     $uri = substr($uri, strlen($scriptDir));
 }
 
-// 4. Nettoyage final
+// 5. Nettoyage final de l'URI (enlève les slashes de début et de fin)
 $uri = trim($uri, '/');
 
-// 5. Découpe
+// 6. Découpe l'URI en segments
 $segments = explode('/', $uri);
 
 $pageNonTrouvee = false;
 
-switch ($segments[0] ?? '/') 
+// Vérification du premier segment (peut être vide si la page d'accueil)
+switch ($segments[0] ?? '') 
 {
     // DashboardController
-    case '/':
+    case '': // Correspond à la racine
     case 'dashboard':
     case 'index.php':
     case 'index.html':
@@ -103,7 +90,6 @@ switch ($segments[0] ?? '/')
         (new DashboardController())->calendrier();
         break;
     
-
     // AuthController
     // GET - Affiche la page d'inscription
     // POST - Gère l'inscription d'un utilisateur
@@ -122,15 +108,54 @@ switch ($segments[0] ?? '/')
         (new AuthController())->logout();
         break;
 
+    // GroupController
+    case 'groupe':
+        switch ($segments[2] ?? '')
+        {
+            case 'add':
+                (new GroupController())->addGroup();
+                break;
+            case 'change':
+                (new GroupController())->changeGroup();
+                break;
+            case 'delete':
+                (new GroupController())->deleteGroupSafe();
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+    
+    case 'performeur':
+        switch ($segments[2] ?? '')
+        {
+            case 'add':
+                (new GroupController())->addPerformeur();
+                break;
+            case 'change':
+                (new GroupController())->changePerformeur();
+                break;
+            case 'delete':
+                (new GroupController())->deletePerformeurSafe();
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+
     // PasswordController
     case 'password':
         switch ($segments[1] ?? '')
         {
             // GET - Affiche la page de reset password
+            // POST - Envoie l'email avec l'url qui contient le token
             case 'reset':
                 (new PasswordController())->resetPassword();
                 break;
             
+            // GET - Affiche la page où l'on change son mot de passe grace au token
             // POST - Change le mot de passe si le token est valide
             case 'change':
                 (new PasswordController())->changePassword();
@@ -143,7 +168,11 @@ switch ($segments[0] ?? '/')
 
     // SpectacleController
     case 'spectacle':
-        switch ($segments[1] ?? '')
+        if (isset($segments[1]) == false)
+        {
+            (new SpectacleController())->index();
+        }
+        else switch ($segments[1] ?? '')
         {
             // POST -- Ajoute un spectacle à la DB
             case 'add':
@@ -210,7 +239,11 @@ switch ($segments[0] ?? '/')
         break;
     
     case 'seance':
-        switch ($segments[1] ?? '')
+        if (isset($segments[1]) == false)
+        {
+            (new SeanceController())->index();
+        }
+        else switch ($segments[1] ?? '')
         {
             // POST -- Ajoute une séance. Une "instance" d'un spectacle
             case 'add':
@@ -236,7 +269,13 @@ switch ($segments[0] ?? '/')
                 break;
         }
         break;
+    
+    // ProfileController
+    case 'profile':
+        (new ProfileController())->index();
+        break;
 
+    // UserController
     case 'user':
         switch ($segments[1] ?? '')
         {
