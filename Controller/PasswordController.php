@@ -1,5 +1,7 @@
 <?php
 
+require_once 'autoload.php';
+
 /**
  * Contrôleur pour la gestion des mots de passe
  * Gère la réinitialisation et le changement de mots de passe
@@ -42,7 +44,7 @@ class PasswordController
             header("Content-Type: application/json");
 
             // Vérification du token CSRF
-            if (!$this->security->checkCSRFToken($_POST['csrf_token'] ?? ''))
+            if (!$this->security->checkCSRFToken())
             {
                 http_response_code(403);
                 echo json_encode([
@@ -168,7 +170,7 @@ class PasswordController
             header("Content-Type: application/json");
 
             // Vérification du token CSRF
-            if (!$this->security->checkCSRFToken($_POST['csrf_token'] ?? ''))
+            if (!$this->security->checkCSRFToken())
             {
                 http_response_code(403);
                 echo json_encode([
