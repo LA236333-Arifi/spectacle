@@ -18,7 +18,6 @@ class SpectacleDataValidator
         $texteAccroche = trim($this->postData['texte_accroche_spectacle'] ?? '');
         $prix = filter_var($this->postData['prix_spectacle'] ?? null, FILTER_VALIDATE_FLOAT);
         $duree = filter_var($this->postData['duree_minutes_spectacle'] ?? null, FILTER_VALIDATE_FLOAT);
-        $statutId = filter_var($this->postData['statut_spectacle_id'] ?? null, FILTER_VALIDATE_INT);
         $utilisateurId = filter_var($this->postData['utilisateur_id'] ?? null, FILTER_VALIDATE_INT);
         $type = filter_var($this->postData['type_spectacle_id'] ?? null, FILTER_VALIDATE_INT);
 
@@ -43,11 +42,6 @@ class SpectacleDataValidator
             $this->errors[] = "La durée doit être un nombre supérieur à 0.";
         }
 
-        if (empty($statutId))
-        {
-            $this->errors[] = "Statut du spectacle invalide.";
-        }
-
         if (empty($utilisateurId))
         {
             $this->errors[] = "Utilisateur invalide.";
@@ -58,56 +52,35 @@ class SpectacleDataValidator
             $this->errors[] = "Type de spectacle invalide.";
         }
 
+        $auteurId = null;
+        $metteurId = null;
+
         // Auteur & metteur en scène si requis
-        $nomAuteur = null;
-        $nomMetteurEnScene = null;
-
-        // Groupe : soit un ID, soit un nom de groupe
-        $groupeId = null;
-        $nomGroupe = null;
-
-        if (!empty($this->postData['groupe_id']))
+        if (SpectacleType::needsAuteur($type)) 
         {
-            $groupeId = filter_var($this->postData['groupe_id'], FILTER_VALIDATE_INT);
-            if ($groupeId === false)
+            // Cas où on reçoit les IDs
+            $hasAuteurEtMetteur = isset($this->postData['auteur_id']) && isset($this->postData['metteur_id']);
+            if ($hasAuteurEtMetteur) 
             {
-                $this->errors[] = "Identifiant de groupe invalide.";
-            }
-        }
-        else
-        {
-            $nomGroupe = trim($this->postData['nom_groupe'] ?? '');
-            if ($nomGroupe === '')
-            {
-                $this->errors[] = "Le nom du groupe est requis si aucun groupe existant n'est sélectionné.";
-            }
-        }
+                $auteurId = filter_var($this->postData['auteur_id'], FILTER_VALIDATE_INT);
+                $metteurId = filter_var($this->postData['metteur_id'], FILTER_VALIDATE_INT);
 
-        // Performeurs
-        $performeurs = [];
-        if (empty($this->postData['groupe_id']))
-        {
-            if (!isset($this->postData['performeurs']) || !is_array($this->postData['performeurs']))
-            {
-                $this->errors[] = "Aucun performeur fourni.";
+                if ($auteurId === false || $metteurId === false) 
+                {
+                    $this->errors[] = "Identifiant auteur ou metteur en scène invalide.";
+                } 
             }
             else
             {
-                foreach ($this->postData['performeurs'] as $p)
-                {
-                    $pNom = trim($p['nom'] ?? '');
-                    $pPrenom = trim($p['prenom'] ?? '');
-                    $pRoleId = filter_var($p['role_id'] ?? null, FILTER_VALIDATE_INT);
-
-                    if (empty($pNom) || empty($pPrenom) || empty($pRoleId) === false)
-                    {
-                        $this->errors[] = "Performeur invalide (nom, prénom ou rôle manquant).";
-                        continue;
-                    }
-
-                    $performeurs[] = new PerformeurData($pNom, $pPrenom, $pRoleId);
-                }
+                $this->errors[] = "Identifiant auteur ou metteur en scène manquants.";
             }
+        }
+
+        // GroupeID
+        $groupeId = filter_var($this->postData['groupe_id'], FILTER_VALIDATE_INT);
+        if ($groupeId === false)
+        {
+            $this->errors[] = "Identifiant de groupe invalide.";
         }
 
         // Si tout est bon, construire le DTO
@@ -118,14 +91,12 @@ class SpectacleDataValidator
                 $texteAccroche,
                 $prix,
                 $duree,
-                $statutId,
+                SpectacleStatut::SansSeance,
                 $utilisateurId,
                 $type,
                 $groupeId,
-                $nomAuteur,
-                $nomMetteurEnScene,
-                $nomGroupe,
-                $performeurs
+                $auteurId,
+                $metteurId
             );
         }
     }
