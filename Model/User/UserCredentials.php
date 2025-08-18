@@ -1,10 +1,5 @@
 <?php
 
-require_once "User.php";
-require_once "Utils/UserConnectionUtils.php";
-require_once "Database.php";
-require_once "UserData.php";
-
 enum RegisterStatus
 {
     case Valid;
@@ -48,13 +43,13 @@ class UserCredentials extends User
 
         if ($this->checkEmailAvailable($this->userData->getMailUtilisateur()) == false)
         {
-            return RegisterStatus::MauvaisPasswordFormat;
+            return RegisterStatus::EmailDejaPris;
         }
 
         return RegisterStatus::Valid;
     }
 
-    public function checkEmailAvailable($email)
+    public static function checkEmailAvailable($email)
     {
         // Connexion à la base de données
         $pdo = Database::getInstance()->getConnection();
@@ -79,7 +74,7 @@ class UserCredentials extends User
         $pdo = Database::getInstance()->getConnection();
 
         // Requête SQL pour mettre à jour le mot de passe de l'utilisateur
-        $sql = "UPDATE utilisateur SET mdp_utilisateur = :password WHERE Id_utilisateur = :userId";
+        $sql = "UPDATE utilisateur SET mdp_utilisateur = :password WHERE utilisateur_id = :userId";
 
         // Préparation de la requête SQL
         $stmt = $pdo->prepare($sql);
@@ -103,13 +98,13 @@ class UserCredentials extends User
      */
     public function insertUser(): bool
     {   
-        $query = "INSERT INTO utilisateurs (nom_utilisateur, prenom_utilisateur,  mail_utilisateur, mdp_utilisateur, statut_utilisateur_id, role_utilisateur_id) VALUES (?, ?, ?, ?, ?)";
+        $query = "INSERT INTO Utilisateur (nom_utilisateur, prenom_utilisateur, mail_utilisateur, mdp_utilisateur, token_utilisateur, date_exp_token_utilisateur, statut_utilisateur_id, role_utilisateur_id) VALUES (?, ?, ?, ?, NULL, NULL, ?, ?)";
         
         // On hash le mot de passe pour convenir aux standards de sécurité
         $hashedPassword = password_hash($this->userData->getMdpUtilisateur(), PASSWORD_DEFAULT);
         
-        // Quand on ajoute un user, il est par défaut actif. C'est seulement plus tard qu'on peut le désactiver si on veut
-        $actifDefaultValue = UserStatut::Valide_Et_Actif;
+        // Quand on ajoute un user, il est par défaut inactif. C'est à l'admin de l'activer au besoin
+        $actifDefaultValue = UserStatut::NonValide_Et_Inactif;
 
         try 
         {
@@ -136,6 +131,7 @@ class UserCredentials extends User
         } 
         catch (Exception $e) 
         {
+            die($e->getMessage());
             return false;
         }
     }
