@@ -1,8 +1,5 @@
 <?php
 
-require_once "User.php";
-require_once "Database.php";
-
 class UserLogin extends User 
 {
     private $nom;
@@ -69,14 +66,14 @@ class UserLogin extends User
 
         $requete->bindParam(':email', $this->email);
         $requete->execute();
-        $userData = $requete->fetchColumn();
 
-        if ($userData === false)
+        $userPassword = $requete->fetchColumn();
+        if ($userPassword === false)
         {
             return false;
         }
 
-        return password_verify($password, $userData['mdp_utilisateur']);
+        return password_verify($password, $userPassword);
     }
 
     public function createUserSession(): bool
@@ -84,13 +81,13 @@ class UserLogin extends User
         // Connexion à la base de données
         $pdo = Database::getInstance()->getConnection();
         $requete = $pdo->prepare("
-            SELECT nom_utilisateur, prenom_utilisateur, role_utilisateur_id
+            SELECT utilisateur_id, nom_utilisateur, prenom_utilisateur, role_utilisateur_id
             FROM utilisateur 
-            WHERE mail_utilisateur = ? AND statut_utilisateur_id = 3");
+            WHERE mail_utilisateur = :email AND statut_utilisateur_id = 3");
 
         $requete->bindParam(':email', $this->email);
         $requete->execute();
-        $userData = $requete->fetchColumn();
+        $userData = $requete->fetch(PDO::FETCH_ASSOC);
 
         if ($userData === false)
         {
@@ -98,7 +95,7 @@ class UserLogin extends User
         }
 
         // On set les attributs de notre object
-        $this->setId($pdo->lastInsertId());
+        $this->setId($userData['utilisateur_id']);
         $this->nom = $userData['nom_utilisateur'];
         $this->prenom = $userData['prenom_utilisateur'];
         $this->role = $userData['role_utilisateur_id'];
