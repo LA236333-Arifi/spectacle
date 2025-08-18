@@ -1,0 +1,142 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  background: #f4f4f8;
+  margin: 0;
+}
+
+main {
+  padding: 40px 20px;
+}
+
+/* Titre */
+h1 {
+  text-align: center;
+  font-size: 2em;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+/* Wrapper */
+.calendar-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* Sélecteur d'année */
+#year-selector {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+#year-selector button {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  background: #ecf0f1;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+#year-selector button:hover {
+  background: #d0d7de;
+}
+
+#status {
+  font-style: italic;
+  color: #555;
+  margin-left: 10px;
+}
+
+/* Cartes mois */
+.mois-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.mois {
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e3e3e3;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+
+.mois:hover {
+  transform: translateY(-3px);
+}
+
+.mois h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #34495e;
+  border-bottom: 1px solid #ececec;
+  padding-bottom: 6px;
+}
+
+.mois p {
+  margin: 6px 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.mois-types {
+  margin: 6px 0 10px 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.mois-types li {
+  margin-bottom: 4px;
+}
+
+/* Barre de progression */
+.progress {
+  background: #e0e0e0;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: auto;
+}
+
+.progress-bar {
+  background: #4f46e5;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .mois-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .mois-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .mois-container {
+    grid-template-columns: 1fr;
+  }
+}
