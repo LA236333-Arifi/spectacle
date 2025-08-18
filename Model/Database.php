@@ -1,14 +1,5 @@
 <?php
 
-if (!isset($_ENV['APP_ENV'])) 
-{
-    require_once __DIR__ . '/../vendor/autoload.php'; // ../ pour revenir à la racine
-
-    // Charge les variables d'environnement du fichier .env à la racine du projet
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../'); // ../ pour revenir à la racine
-    $dotenv->load();
-}
-
 class Database 
 {
     // La configuration de la DB par défaut
@@ -29,23 +20,23 @@ class Database
     // Constructeur en private pour éviter l'instanciation par une autre classe
     private function __construct() 
     {
-        $appEnv = $_ENV['APP_ENV'] ?? 'prod';
+        $appEnv = $_ENV['APP_ENV'] ?? 'dev';
         self::$currentEnv = $appEnv;
         
         // Vérifie si le mode test est activé
-        if ($appEnv === 'test') 
+        if ($appEnv == 'test') 
         {
-            $this->host = $_ENV['TEST_MYSQL_SERVEUR'];
-            $this->dbname = $_ENV['TEST_MYSQL_NOMDB'];
-            $this->user = $_ENV['TEST_MYSQL_UTILISATEUR'];
-            $this->pass = $_ENV['TEST_MYSQL_MDP'];
+            $this->host = $_ENV['TEST_MYSQL_SERVEUR'] ?? 'localhost';
+            $this->dbname = $_ENV['TEST_MYSQL_NOMDB'] ?? 'spectacle_test';
+            $this->user = $_ENV['TEST_MYSQL_UTILISATEUR'] ?? 'root';
+            $this->pass = $_ENV['TEST_MYSQL_MDP'] ?? '';
         } 
         else 
         {
-            $this->host = $_ENV['PROD_MYSQL_SERVEUR'];
-            $this->dbname = $_ENV['PROD_MYSQL_NOMDB'];
-            $this->user = $_ENV['PROD_MYSQL_UTILISATEUR'];
-            $this->pass = $_ENV['PROD_MYSQL_MDP'];
+            $this->host = $_ENV['PROD_MYSQL_SERVEUR'] ?? 'localhost';
+            $this->dbname = $_ENV['PROD_MYSQL_NOMDB'] ?? 'spectacle';
+            $this->user = $_ENV['PROD_MYSQL_UTILISATEUR'] ?? 'root';
+            $this->pass = $_ENV['PROD_MYSQL_MDP'] ?? '';
         }
 
         try 
@@ -67,7 +58,7 @@ class Database
     // La méthode pour récupérer l'instance
     public static function getInstance()
     {
-        $currentEnv = $_ENV['APP_ENV'] ?? 'prod';
+        $currentEnv = $_ENV['APP_ENV'] ?? 'dev';
 
         // Crée une nouvele instance si elle est null ou que l'environnement courant a changé
         if (self::$instance === null || self::$currentEnv !== $currentEnv) 
