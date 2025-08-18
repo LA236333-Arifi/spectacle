@@ -1,5 +1,7 @@
 <?php
 
+require_once 'autoload.php';
+
 /**
  * Contrôleur d'authentification moderne
  * Gère la connexion, inscription, et réinitialisation de mot de passe
@@ -28,7 +30,7 @@ class AuthController
         {
             $csrfToken = $this->security->genererCSRFToken();
 
-            $viewRenderer = new ViewRenderer("View/Register.php", ['token_csrf' => $csrfToken]);
+            $viewRenderer = new ViewRenderer("View/Auth/Register.php", ['token_csrf' => $csrfToken]);
             $viewRenderer->render();
 
             return true;
@@ -38,7 +40,7 @@ class AuthController
             header('Content-Type: application/json');
 
             // Vérification du token CSRF
-            if (!$this->security->checkCSRFToken($_POST['csrf_token'] ?? '')) 
+            if (!$this->security->checkCSRFToken()) 
             {
                 http_response_code(403);
                 echo json_encode([
@@ -253,7 +255,7 @@ class AuthController
             // Génération du token CSRF pour le formulaire du login
             $csrfToken = $this->security->genererCSRFToken();
 
-            $viewRenderer = new ViewRenderer("View/Login.php", ['token_csrf' => $csrfToken]);
+            $viewRenderer = new ViewRenderer("View/Auth/Login.php", ['token_csrf' => $csrfToken]);
             $viewRenderer->render();
             return true;
         }

@@ -1,7 +1,16 @@
 <?php
 
+require_once 'autoload.php';
+
 class GroupController
 {
+    private $security;
+
+    public function __construct()
+    {
+        $this->security = new Security(true);
+    }
+
     /**
      * Route: POST /groupe/add
      * Ajoute un groupe avec son nom et ses performeurs
@@ -50,7 +59,8 @@ class GroupController
                 continue;
             }
 
-            $performeurDTO = new PerformeurData(
+            $performeurDTO = new PerformeurData
+            (
                 $perfData['nom_performeur'],
                 $perfData['prenom_performeur'],
                 $roleId
@@ -61,13 +71,7 @@ class GroupController
 
             if ($performeurId)
             {
-                $groupe->ajouterPerformeurAuGroupe(
-                    new PerformeurData(
-                        $performeurDTO->getNom(),
-                        $performeurDTO->getPrenom(),
-                        $performeurDTO->getRoleId()
-                    )
-                );
+                $groupe->ajouterPerformeurAuGroupe($performeurId);
             }
         }
 
@@ -75,10 +79,11 @@ class GroupController
         return true;
     }
      
-
-        /**
+    /**
      * Route: POST /groupe/change
-     * Change le nom du groupe ou ajoute/retire un performeur
+     * Change le nom du groupe ou ajoute/retire un performeur du groupe.
+     * On crée le performeur si on ne fournit pas d'ID mais plutot son nom, prénom et role.
+     * Quand on supprime un performeur, on le dissocie du groupe en réalité.
      */
     public function changeGroup()
     {
@@ -113,20 +118,41 @@ class GroupController
         {
             foreach ($listePerformeurs['add'] as $perfData)
             {
+                if (empty($perfData['performeur_id']) == false)
+                {
+                    $performeurId = filter_var($perfData['performeur_id'], FILTER_VALIDATE_INT);
+                    if ($performeurId === false)
+                    {
+                       continue;
+                    }
+
+                    $groupe->ajouterPerformeurAuGroupe($performeurId);
+                    continue;
+                }
+
                 if (empty($perfData['nom_performeur']) || empty($perfData['prenom_performeur']) || empty($perfData['role_performeur_id']))
                 {
                     continue;
                 }
-                $performeurDTO = new PerformeurData(
+
+                $performeurRoleId = filter_var($perfData['role_performeur_id'], FILTER_VALIDATE_INT);
+                if ($performeurId === false)
+                {
+                       continue;
+                }
+
+                $performeurDTO = new PerformeurData
+                (
                     $perfData['nom_performeur'],
                     $perfData['prenom_performeur'],
-                    (int)$perfData['role_performeur_id']
+                    $performeurRoleId
                 );
+
                 $performeur = new Performeur();
                 $performeurId = $performeur->ajouterPerformeur($performeurDTO);
                 if ($performeurId)
                 {
-                    $groupe->ajouterPerformeurAuGroupe($performeurDTO);
+                    $groupe->ajouterPerformeurAuGroupe($performeurId);
                 }
             }
         }
@@ -136,16 +162,13 @@ class GroupController
         {
             foreach ($listePerformeurs['remove'] as $perfData)
             {
-                if (empty($perfData['nom_performeur']) || empty($perfData['prenom_performeur']) || empty($perfData['role_performeur_id']))
+                $performeurId = filter_var($perfData['performeur_id'], FILTER_VALIDATE_INT);
+                if ($performeurId === false)
                 {
                     continue;
                 }
-                $performeurDTO = new PerformeurData(
-                    $perfData['nom_performeur'],
-                    $perfData['prenom_performeur'],
-                    (int)$perfData['role_performeur_id']
-                );
-                $groupe->retirerPerformeurDuGroupe($performeurDTO);
+
+                $groupe->retirerPerformeurDuGroupe($performeurId);
             }
         }
 
@@ -153,6 +176,54 @@ class GroupController
         header('Content-Type: application/json');
         echo json_encode(['status' => 'success', 'message' => "Groupe modifié avec succès"]);
         return true;
+    }
+
+    /**
+     * Route: POST /groupe/delete
+     * Supprime un groupe uniquement lorsqu'il n'a aucun spectacle lié.
+     * Cela supprime également les liasons avec les performeurs.
+     */
+    public function deleteGroupSafe()
+    {
+        if (RequestUtils::isPostMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour supprimer un groupe."));
+            return false;
+        }
+
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $groupeId = $_POST['groupe_id'] ?? null;
+
+        if (empty($groupeId))
+        {
+            echo json_encode(['status' => 'error', 'message' => "L'identifiant du groupe est requis."]);
+            return false;
+        }
+
+        $groupeId = filter_var($groupeId, FILTER_VALIDATE_INT);
+        if ($groupeId === false)
+        {
+            echo json_encode(['status' => 'error', 'message' => "Identifiant du groupe invalide."]);
+            return false;
+        }
+
+        $groupe = new Groupe($groupeId);
+        $result = $groupe->supprimerGroupeSafe();
+
+        if ($result['success'])
+        {
+            http_response_code(200);
+            echo json_encode(['status' => 'success', 'message' => $result['message']]);
+            return true;
+        }
+        else
+        {
+            echo json_encode(['status' => 'error', 'message' => $result['message']]);
+            return false;
+        }
     }
 
     /**
@@ -168,14 +239,15 @@ class GroupController
             return false;
         }
 
+        http_response_code(400);
+        header('Content-Type: application/json');
+
         $nom = $_POST['nom_performeur'] ?? null;
         $prenom = $_POST['prenom_performeur'] ?? null;
         $roleId = $_POST['role_performeur_id'] ?? null;
 
         if (empty($nom) || empty($prenom) || empty($roleId))
         {
-            http_response_code(400);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => "Nom, prénom ou rôle du performeur manquant."]);
             return false;
         }
@@ -187,14 +259,11 @@ class GroupController
         if ($performeurId)
         {
             http_response_code(200);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'success', 'message' => "Performeur ajouté avec succès", 'performeur_id' => $performeurId]);
             return true;
         }
         else
         {
-            http_response_code(400);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => "Impossible d'ajouter le performeur."]);
             return false;
         }
@@ -213,6 +282,9 @@ class GroupController
             return false;
         }
 
+        http_response_code(400);
+        header('Content-Type: application/json');
+
         $performeurId = $_POST['performeur_id'] ?? null;
         $nom = $_POST['nom_performeur'] ?? null;
         $prenom = $_POST['prenom_performeur'] ?? null;
@@ -220,41 +292,89 @@ class GroupController
 
         if (empty($performeurId))
         {
-            http_response_code(400);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => "L'identifiant du performeur est requis."]);
             return false;
         }
 
         $performeur = new Performeur($performeurId);
-
         $success = true;
 
-        if ($nom !== null && $prenom !== null)
+        if (empty($nom) == false)
         {
-            $performeurDTO = new PerformeurData($nom, $prenom, (int)($roleId ?? 0));
-            $success = $performeur->modifierNomPrenom($performeurDTO);
+            $success &= $performeur->modifierNom($nom);
         }
 
-        if ($roleId !== null)
+        if (empty($prenom) == false)
         {
-            $success = $success && $performeur->modifierRole((int)$roleId);
+            $success &= $performeur->modifierPrenom($prenom);
+        }
+
+        if (empty($roleId) == false)
+        {
+            $roleId = filter_var($roleId,FILTER_VALIDATE_INT);
+            if ($roleId !== false)
+            {
+                $success = $success && $performeur->modifierRole($roleId);
+            }
         }
 
         if ($success)
         {
             http_response_code(200);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'success', 'message' => "Performeur modifié avec succès"]);
             return true;
         }
         else
         {
-            http_response_code(400);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => "Impossible de modifier le performeur."]);
             return false;
         }
     }
 
+    /**
+     * Route: POST /performeur/delete
+     * Supprime un performeur uniquement lorsqu'il n'est lié à aucun groupe
+     */
+    public function deletePerformeurSafe()
+    {
+        if (RequestUtils::isPostMethod() == false)
+        {
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour supprimer un performeur."));
+            return false;
+        }
+
+        http_response_code(400);
+        header('Content-Type: application/json');
+
+        $performeurId = $_POST['performeur_id'] ?? null;
+
+        if (empty($performeurId))
+        {
+            echo json_encode(['status' => 'error', 'message' => "L'identifiant du performeur est requis."]);
+            return false;
+        }
+
+        $performeurId = filter_var($performeurId, FILTER_VALIDATE_INT);
+        if ($performeurId === false)
+        {
+            echo json_encode(['status' => 'error', 'message' => "Identifiant du performeur invalide."]);
+            return false;
+        }
+
+        $performeur = new Performeur($performeurId);
+        $result = $performeur->supprimerPerformeurSafe();
+
+        if ($result['success'])
+        {
+            http_response_code(200);
+            echo json_encode(['status' => 'success', 'message' => $result['message']]);
+            return true;
+        }
+        else
+        {
+            echo json_encode(['status' => 'error', 'message' => $result['message']]);
+            return false;
+        }
+    }
 }

@@ -10,12 +10,8 @@ class SpectacleData
     private int $utilisateurId;
     private int $type;
     private ?int $groupeId;
-    private ?string $nomAuteur;
-    private ?string $prenomAuteur;
-    private ?string $nomMetteurEnScene;
-    private ?string $prenomMetteurEnScene;
-    private ?string $nomGroupe;
-    private array $performeurs; // tableau d’objets PerformeurData
+    private ?string $auteurId;
+    private ?string $metteurId;
 
     public function __construct(
         string $nom,
@@ -26,12 +22,8 @@ class SpectacleData
         int $utilisateurId,
         int $type,
         ?int $groupeId,
-        ?string $nomAuteur,
-        ?string $prenomAuteur,
-        ?string $nomMetteurEnScene,
-        ?string $prenomMetteurEnScene,
-        ?string $nomGroupe,
-        array $performeurs
+        ?string $auteurId,
+        ?string $metteurId,
     ) {
         $this->nom = $nom;
         $this->texteAccroche = $texteAccroche;
@@ -41,12 +33,8 @@ class SpectacleData
         $this->utilisateurId = $utilisateurId;
         $this->type = $type;
         $this->groupeId = $groupeId;
-        $this->nomAuteur = $nomAuteur;
-        $this->prenomAuteur = $prenomAuteur;
-        $this->nomMetteurEnScene = $nomMetteurEnScene;
-        $this->prenomMetteurEnScene = $prenomMetteurEnScene;
-        $this->nomGroupe = $nomGroupe;
-        $this->performeurs = $performeurs;
+        $this->auteurId = $auteurId;
+        $this->metteurId = $metteurId;
     }
 
     // Getters
@@ -57,12 +45,7 @@ class SpectacleData
     public function getStatutSpectacleId()      { return $this->statutSpectacleId; }
     public function getUtilisateurId()          { return $this->utilisateurId; }
     public function getType()                   { return $this->type; }
-    public function hasGroupe()                 { return $this->groupeId !== null; }
     public function getGroupeId()               { return $this->groupeId; }
-    public function getNomAuteur()              { return $this->nomAuteur; }
-    public function getPrenomAuteur()           { return $this->prenomAuteur; }
-    public function getNomMetteurEnScene()      { return $this->nomMetteurEnScene; }
-    public function getPrenomMetteurEnScene()   { return $this->prenomMetteurEnScene; }
-    public function getNomGroupe()              { return $this->nomGroupe; }
-    public function getPerformeurs()            { return $this->performeurs; }
+    public function getAuteurId()               { return $this->auteurId; }
+    public function getMetteurSceneId()         { return $this->metteurId; }
 }
