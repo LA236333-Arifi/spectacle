@@ -10,6 +10,18 @@ class SpectacleType
     public const Danse = 5;
     private const Max = 6;
 
+    public static function getSpectacleTypeToString(): array
+    {
+        return 
+        [
+            self::Theatre          => 'Théâtre',
+            self::ConcertRock      => 'Concert Rock',
+            self::ConcertClassique => 'Concert Classique',
+            self::Humoriste        => 'Humouriste',
+            self::Danse            => 'Danse'
+        ];
+    }
+
     public static function isValid($type)
     {
         return $type > self::Invalid && $type < self::Max;
