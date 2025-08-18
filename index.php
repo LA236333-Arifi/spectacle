@@ -24,16 +24,6 @@ require_once 'autoload.php';
 define('SITE_NAME', 'Salle de Spectacle');
 define('SITE_URL', $_ENV['SITE_URL'] ?? 'localhost');
 
-/**
- * Affiche une page 404
- */
-function show404() 
-{
-    // Affiche une page 404 HTML
-    http_response_code(404);
-    echo "<h1>Erreur 404</h1><p>Page non trouvée</p>";
-}
-
 // ===================================
 // ROUTAGE PRINCIPAL
 // ===================================
@@ -108,10 +98,43 @@ switch ($segments[0] ?? '')
         (new AuthController())->logout();
         break;
 
+    case 'auteur':
+        switch ($segments[1] ?? '')
+        {
+            case 'add':
+                (new AuteurController())->addAuteur();
+                break;
+            case 'list':
+                (new AuteurController())->apiListAuteurs();
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+
+    case 'metteur':
+        switch ($segments[1] ?? '')
+        {
+            case 'add':
+                (new AuteurController())->addMetteurScene();
+                break;
+            case 'list':
+                (new AuteurController())->apiListMetteurs();
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
+        break;
+
     // GroupController
     case 'groupe':
-        switch ($segments[2] ?? '')
+        switch ($segments[1] ?? '')
         {
+            case 'list':
+                (new GroupController())->apiList();
+                break;
             case 'add':
                 (new GroupController())->addGroup();
                 break;
@@ -122,13 +145,13 @@ switch ($segments[0] ?? '')
                 (new GroupController())->deleteGroupSafe();
                 break;
             default:
-                $pageNonTrouvee = true;
+                (new GroupController())->index();
                 break;
         }
         break;
     
     case 'performeur':
-        switch ($segments[2] ?? '')
+        switch ($segments[1] ?? '')
         {
             case 'add':
                 (new GroupController())->addPerformeur();
@@ -168,46 +191,85 @@ switch ($segments[0] ?? '')
 
     // SpectacleController
     case 'spectacle':
-        if (isset($segments[1]) == false)
-        {
-            (new SpectacleController())->index();
-        }
-        else switch ($segments[1] ?? '')
+        switch ($segments[1] ?? '')
         {
             // POST -- Ajoute un spectacle à la DB
             case 'add':
-                (new SpectacleController())->ajouter();
+                if (isset($segments[2]) && $segments[2] == 'index')
+                {
+                    (new SpectacleController())->indexAjouter();
+                }
+                else
+                {
+                    (new SpectacleController())->ajouter();
+                }
                 break;
 
-            //POST -- Change les infos du spectacle, de l'auteur/metteur en scène, du groupe associé
-            case 'modify':
-                (new SpectacleController())->modifier();
-                break;
-
-            // POST -- Cloture un spectacle et annule toutes les séances programmées futures
+            //POST -- Cloture un spectacle et annule toutes les séances programmées futures
             case 'cloturer':
-                (new SpectacleController())->cloturer();
+                if (isset($segments[2]) && $segments[2] == 'index')
+                {
+                    (new SpectacleController())->indexCloturer();
+                }
+                else
+                {
+                    (new SpectacleController())->cloturer();
+                }
                 break;
-
-            // POST -- Supprime un spectacle, les séances, l'auteur/metteur en scène.
-            // Mais la fonctionnalité est désactivée pour conserver l'intégrité des données
-            /*case 'delete':
-                (new SpectacleController())->supprimer();
-                break;*/
 
             // GET -- Affiche les différents spectacles qui matchent la recherche
             case 'search':
-                (new SpectacleController())->search();
+                if (isset($segments[2]) && $segments[2] == 'data')
+                {
+                    (new SpectacleController())->apiSearch();
+                }
+                else
+                {
+                    (new SpectacleController())->searchPage();
+                }
+                break;
+
+            // GET -- Envoie la liste des spectacles en cours
+            case 'list':
+                (new SpectacleController())->apiListSpectacles();
+                break;
+
+            // API en GET
+            case 'data':
+                switch ($segments[2] ?? '')
+                {
+                    // GET - Envoie les données annuelles pour le calendrier
+                    case 'calendrier':
+                        (new SpectacleController())->apiCalendrier();
+                        break;
+
+                    // GET - Envoie les données des "stats" (répartition par type de spectacle)
+                    case 'stats':
+                        (new SpectacleController())->apiStats();
+                        break;
+
+                    // GET - Envoie les données d'un spectacle
+                    case 'view':
+                        (new SpectacleController())->apiViewSpectacle();
+                        break;
+
+                    case 'all':
+                        (new SpectacleController())->apiGetAllSpectacles();
+                        break;
+                    default:
+                        $pageNonTrouvee = true;
+                        break;
+                }
                 break;
 
             // GET -- Affiche la page des stats de chaque type de spectacle
             case 'stats':  
-                (new SpectacleController())->stats();
+                (new SpectacleController())->statsPage();
                 break;
             
             // GET -- Affiche la page d'information d'un spectacle
             case 'view':
-                (new SpectacleController())->viewSpectacle();
+                (new SpectacleController())->viewSpectaclePage();
                 break;
 
             // GET -- Affiche la page pour télécharger le pdf
@@ -257,12 +319,16 @@ switch ($segments[0] ?? '')
 
             // POST -- Annule une séance
             case 'cancel':
-                (new SeanceController())->cancelSeance();
+                (new SeanceController())->annulerSeance();
+                break;
+
+            case 'date':
+                (new SeanceController())->getSeancesDates();
                 break;
 
             // GET -- Affiche la liste de toutes les prochaines séances 
             case 'list':
-                (new SeanceController())->listSeances();
+                (new SeanceController())->apiListSeances();
                 break;
             default:
                 $pageNonTrouvee = true;
@@ -272,7 +338,19 @@ switch ($segments[0] ?? '')
     
     // ProfileController
     case 'profile':
-        (new ProfileController())->index();
+        if (isset($segments[1]) == false)
+        {
+            (new ProfileController())->index();
+        }
+        else switch ($segments[1] ?? '')
+        {
+            case 'update':
+                (new ProfileController())->updateProfile();
+                break;
+            default:
+                $pageNonTrouvee = true;
+                break;
+        }
         break;
 
     // UserController
@@ -280,7 +358,7 @@ switch ($segments[0] ?? '')
         switch ($segments[1] ?? '')
         {
             case 'list':
-                switch($segments[2] ?? 'users')
+                switch($segments[2] ?? '')
                 {
                     // GET - Affiche la liste des utilisateurs validés
                     case 'users':
@@ -292,19 +370,42 @@ switch ($segments[0] ?? '')
                         (new UserController())->listAccess();
                         break;
                     default:
-                    $pageNonTrouvee = true;
-                    break;
+                        $pageNonTrouvee = true;
+                        break;
                 }
-                break;
-            
-            // GET - Recherche un utilisateur via son nom/prénom
-            case 'search':
-                (new UserController())->searchUsers();
-                break;
+            break;
+
+            case 'data':
+                switch ($segments[2] ?? '')
+                {
+                    // GET - Affiche la liste des utilisateurs validés
+                    case 'users':
+                        (new UserController())->apiListUsers();
+                        break;
+
+                    // GET - Affiche la liste des utilisateurs non validés (en attente)
+                    case 'access':
+                        (new UserController())->apiListAccess();
+                        break;
+                    default:
+                        $pageNonTrouvee = true;
+                        break;
+                }
+            break;
 
             // POST - active/désactive un utilisateur en inversant son statut courant
             case 'toggle':
                 (new UserController())->toggleStatus();
+                break;
+            
+            // POST - Accepte la demande d'inscription d'un utilisateur et lui envoie un email d'acceptation
+            case 'accept':
+                (new UserController())->accept();
+                break;
+
+            // POST - Refuse la demande d'inscription d'un utilisateur et lui envoie un email de refus
+            case 'refuse':
+                (new UserController())->refuse();
                 break;
             default:
                 $pageNonTrouvee = true;
@@ -320,6 +421,6 @@ switch ($segments[0] ?? '')
 // Si aucune route ne correspond, alors on affiche la fameuse erreur 404
 if ($pageNonTrouvee)
 {
-    show404();
+    ViewRenderer::show404();
 }
 ?>
