@@ -42,7 +42,7 @@ class TokenResetPassword
             return false;
         }
 
-        $sql = "SELECT utilisateur_id FROM utilisateur WHERE token_utilisateur = :token AND token_utilisateur IS NOT NULL AND NOW() < date_exp_token_utilisateur AND actif_utilisateur = 1";
+        $sql = "SELECT utilisateur_id FROM utilisateur WHERE token_utilisateur = :token AND token_utilisateur IS NOT NULL AND NOW() < date_exp_token_utilisateur AND statut_utilisateur_id = 3";
         
         // Préparation de la requête
         $pdo = Database::getInstance()->getConnection();
