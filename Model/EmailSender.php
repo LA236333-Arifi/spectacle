@@ -36,7 +36,7 @@ class EmailSender
 
     public function setSubject($sujet)
     {
-        if (empty($subject) == false)
+        if (empty($sujet) == false)
         {
             $this->mail->Subject = $sujet;
         }

@@ -4,10 +4,12 @@ class UserActivity
 {
     private $userId = null;
     private $userStatut = null;
+    private $pdo;
 
     public function __construct($newId)
     {
         $this->userId = $newId;
+        $this->pdo = Database::getInstance()->getConnection();
     }
 
     public function getUserStatut()
@@ -27,10 +29,8 @@ class UserActivity
             return false;
         }
 
-        $db = Database::getInstance()->getConnection();
-
         // Récupérer le statut actuel
-        $stmt = $db->prepare("SELECT statut_utilisateur_id FROM utilisateur WHERE utilisateur_id = ?");
+        $stmt = $this->pdo->prepare("SELECT statut_utilisateur_id FROM utilisateur WHERE utilisateur_id = ?");
         $stmt->execute([$this->userId]);
         $this->userStatut = $stmt->fetchColumn();
 
@@ -39,8 +39,6 @@ class UserActivity
 
     public function toggleUserActivity()
     {
-        $db = Database::getInstance()->getConnection();
-
         if (!isset($this->userStatut))
         {
             return false;
@@ -50,7 +48,7 @@ class UserActivity
         $newStatus = ($this->userStatut == UserStatut::Valide_Et_Inactif) ? 
                                            UserStatut::Valide_Et_Actif : 
                                            UserStatut::Valide_Et_Inactif;
-        $stmt = $db->prepare("UPDATE utilisateur SET statut_utilisateur_id = ? WHERE utilisateur_id = ?");
+        $stmt = $this->pdo->prepare("UPDATE utilisateur SET statut_utilisateur_id = ? WHERE utilisateur_id = ?");
         if ($stmt->execute([$newStatus, $this->userId]))
         {
             $this->userStatut = $newStatus;
@@ -58,5 +56,54 @@ class UserActivity
         }
 
         return false;
+    }
+
+    public function acceptUser()
+    {
+        if (!isset($this->userId))
+        {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare("UPDATE utilisateur SET statut_utilisateur_id = 3 WHERE utilisateur_id = ?");
+        if ($stmt->execute([$this->userId]))
+        {
+            $this->userStatut = UserStatut::Valide_Et_Actif;
+            return true;
+        }
+
+        return false;
+    }
+
+    public function refuseUser()
+    {
+        if (!isset($this->userId))
+        {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare("DELETE FROM utilisateur WHERE utilisateur_id = ?");
+        if ($stmt->execute([$this->userId]))
+        {
+            $this->userId = null;
+            $this->userStatut = null;
+            return true;
+        }
+
+        return false;
+    }
+
+    public function getUserEmail()
+    {
+        if (!isset($this->userId))
+        {
+            return null;
+        }
+
+        $stmt = $this->pdo->prepare("SELECT mail_utilisateur FROM utilisateur WHERE utilisateur_id = ?");
+        $stmt->execute([$this->userId]);
+        $email = $stmt->fetchColumn();
+
+        return $email;
     }
 }

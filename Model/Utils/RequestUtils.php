@@ -12,11 +12,6 @@ class RequestUtils
         return isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST';
     }
 
-    public static function isPutMethod(): bool
-    {
-        return isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'PUT';
-    }
-
     public static function isNotGetAndPostMethod(): bool
     {
         return !self::isGetMethod() && !self::isPostMethod();
