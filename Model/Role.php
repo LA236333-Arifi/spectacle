@@ -7,13 +7,14 @@ class Role
     public const SECRETAIRE     = 2;
     public const ROLE_MAX       = 3;
 
-    public static array $RoleToString = 
-    [
-        self::ROLE_INVALIDE     => 'Role invalide',
-        self::GERANT            => 'Gérant',
-        self::SECRETAIRE        => 'Secrétaire',
-        self::ROLE_MAX          => 'Role max',
-    ];
+    public static function getRoleToString(): array
+    {
+        return 
+        [
+            self::GERANT     => 'Gérant',
+            self::SECRETAIRE => 'Secrétaire',
+        ];
+    }
 
     // Fonction qui retourne le nom du role et qui permet de savoir si le role est valide
     public static function isSameRole($roleId, $roleCompare)
