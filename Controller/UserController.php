@@ -1,5 +1,7 @@
 <?php
 
+require_once 'autoload.php';
+
 /**
  * Contrôleur pour la gestion des utilisateurs
  * Gère les opérations CRUD sur les utilisateurs (administration)
@@ -7,7 +9,6 @@
 class UserController 
 {
     private $security;
-    private $emailSender;
     
     public function __construct() 
     {
@@ -15,19 +16,19 @@ class UserController
     }
     
     /**
-     * Affiche la liste des utilisateurs (admin uniquement)
+     * Affiche la liste des utilisateurs validés (admin uniquement)
      * Route: GET /user/list
      */
     public function listUsers() 
     {
         if (!UserConnectionUtils::isAdminConnected()) 
         {
-            http_response_code(400);
+            http_response_code(403);
             ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
             return false;
         }
 
-        if (RequestUtils::isPostMethod() == false)
+        if (RequestUtils::isGetMethod() == false)
         {
             // Définir un code HTTP 405 (Method Not Allowed)
             http_response_code(405);
@@ -37,25 +38,141 @@ class UserController
             return false;
         }
 
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = max(UserList::LimitDefault, (int)$_GET['limit'] ?? UserList::LimitDefault);
+        $viewData = 
+        [
+            'userStatutsJson' => json_encode(UserStatut::getUserStatutToString()),
+            'token_csrf' => $this->security->genererCSRFToken()
+        ];
 
-        $userList = new UserList($page, $limit);
+        // Affichage
+        $viewRenderer = new ViewRenderer("View/Gerant/ListeUsersValides.php", $viewData);
+        $viewRenderer->render();
+
+        return true;
+    }
+
+    public function apiListUsers()
+    {
+        if (!UserConnectionUtils::isAdminConnected()) 
+        {
+            http_response_code(403);
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Réservé aux administrateurs."
+                ]);
+            return false;
+        }
+
+        if (RequestUtils::isGetMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Méthode non supportée."
+                ]);
+            
+            return false;
+        }
+
+        $page = max(1, ($_GET['page'] ?? 1));
+        $limit = $_GET['limit'] ?? UserList::LimitDefault;
+
+        $page = filter_var($page, FILTER_VALIDATE_INT);
+        $limit = filter_var($limit, FILTER_VALIDATE_INT);
+
+        if ($page === false || $limit === false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Les paramètres de la page et de la limite doivent être numériques, si présents."
+                ]);
+            
+            return false;
+        }
+
+        $userId = UserConnectionUtils::getConnectedUserId();
+        $userList = new UserList($page, $limit, $userId);
 
         // Récup des données stockées dans l'objet avec un cycle de vie limité à ce scope
         $userList->storeActiveUserList();
 
-        $viewData = 
-        [
-            'users' => $userList->getUsers(),
-            'totalPages' => $userList->getTotalPages(),
-            'totalUsers' => $userList->getTotalUsers(),
-            'currentPage' => $page
-        ];
+        echo json_encode
+        ([
+            'status'        => 'success', 
+            'users'         => $userList->getUsers(),
+            'totalPages'    => $userList->getTotalPages(),
+            'totalUsers'    => $userList->getTotalUsers(),
+            'currentPage'   => $page
+        ]);
+        return true;
+    }
 
-        // Affichage
-        $viewRenderer = new ViewRenderer("View/UserViewList.php", $viewData);
-        $viewRenderer->render();
+    public function apiListAccess()
+    {
+        if (!UserConnectionUtils::isAdminConnected()) 
+        {
+            http_response_code(403);
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Réservé aux administrateurs."
+                ]);
+            return false;
+        }
+
+        if (RequestUtils::isGetMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Méthode non supportée."
+                ]);
+            
+            return false;
+        }
+
+        $page = max(1, ($_GET['page'] ?? 1));
+        $limit = $_GET['limit'] ?? UserList::LimitDefault;
+
+        $page = filter_var($page, FILTER_VALIDATE_INT);
+        $limit = filter_var($limit, FILTER_VALIDATE_INT);
+
+        if ($page === false || $limit === false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Les paramètres de la page et de la limite doivent être numériques, si présents."
+                ]);
+            
+            return false;
+        }
+
+        $userId = UserConnectionUtils::getConnectedUserId();
+        $userList = new UserList($page, $limit, $userId);
+
+        // Récup des données stockées dans l'objet avec un cycle de vie limité à ce scope
+        $userList->storePendingValidationUserList();
+
+        echo json_encode
+        ([
+            'status'        => 'success', 
+            'users'         => $userList->getUsers(),
+            'totalPages'    => $userList->getTotalPages(),
+            'totalUsers'    => $userList->getTotalUsers(),
+            'currentPage'   => $page
+        ]);
+        return true;
     }
 
     public function listAccess()
@@ -67,7 +184,7 @@ class UserController
             return false;
         }
 
-        if (RequestUtils::isPostMethod() == false)
+        if (RequestUtils::isGetMethod() == false)
         {
             // Définir un code HTTP 405 (Method Not Allowed)
             http_response_code(405);
@@ -76,71 +193,17 @@ class UserController
             ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
             return false;
         }
-
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = max(UserList::LimitDefault, (int)($_GET['limit'] ?? UserList::LimitDefault));
-
-        $userList = new UserList($page, $limit);
-        $userList->storePendingValidationUserList();
 
         $viewData = 
         [
-            'users' => $userList->getUsers(),
-            'totalPages' => $userList->getTotalPages(),
-            'totalUsers' => $userList->getTotalUsers(),
-            'currentPage' => $page
+            'userStatutsJson' => json_encode(UserStatut::getUserStatutToString()),
+            'token_csrf' => $this->security->genererCSRFToken()
         ];
 
-        $viewRenderer = new ViewRenderer("View/UserAccessList.php", $viewData);
+        $viewRenderer = new ViewRenderer("View/Gerant/ListeUsersAttente.php", $viewData);
         $viewRenderer->render();
-    }
 
-    public function searchUsers()
-    {
-        if (!UserConnectionUtils::isAdminConnected())
-        {
-            http_response_code(403);
-            ViewRenderer::error(new MessageErreur("Accès refusé", "Réservé aux administrateurs"));
-            return false;
-        }
-
-        if (RequestUtils::isPostMethod() == false)
-        {
-            // Définir un code HTTP 405 (Method Not Allowed)
-            http_response_code(405);
-
-            // On setup le message d'erreur pour la vue
-            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
-            return false;
-        }
-
-        header('Content-Type: application/json');
-
-        $query = trim($_GET['query'] ?? '');
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = max(UserList::LimitDefault, (int)($_GET['limit'] ?? UserList::LimitDefault));
-
-        if (empty($query))
-        {
-            echo json_encode(
-                [
-                    'status' => 'error',
-                    'message' => 'Champ de recherche vide.'
-                ]);
-                
-            return false;
-        }
-
-        $userList = new UserList($page, $limit);
-        $userList->searchUsersByQuery($query);
-
-        echo json_encode(
-        [
-            'results' => $userList->getUsers(),
-            'totalUsers' => $userList->getTotalUsers(),
-            'totalPages' => $userList->getTotalPages(),
-            'currentPage' => $page
-        ]);
+        return true;
     }
 
     /**
@@ -149,13 +212,20 @@ class UserController
      */
     public function toggleStatus() 
     {
+        header('Content-Type: application/json');
+
         if (!UserConnectionUtils::isAdminConnected()) 
         {
             // Définir un code HTTP 405 (Unauthorized)
             http_response_code(401);
 
             // On setup le message d'erreur pour la vue
-            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Il faut se connecter en tant qu'administrateur pour visionner cette page."));
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Il faut se connecter en tant qu'administrateur pour utiliser ce endpoint"
+                ]);
+                
             return false;
         }
 
@@ -165,17 +235,46 @@ class UserController
             http_response_code(405);
 
             // On setup le message d'erreur pour la vue
-            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "La méthode n'est pas supportée, veuillez utiliser du GET"
+                ]);
+            return false;
+        }
+
+        // Vérification du token CSRF
+        if (!$this->security->checkCSRFToken())
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
         
-        header('Content-Type: application/json');
-
         // Définir un code HTTP 400 (Bad Request) par défaut 
         http_response_code(400);
         $userId = $_POST['id'] ?? null;
 
         if (empty($userId))
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est absent."
+                ]);
+            return false;
+        }
+
+        $userId = filter_var($userId, FILTER_VALIDATE_INT);
+        if ($userId === false)
+        {
+            return false;
+        }
+
+        if ($userId == UserConnectionUtils::getConnectedUserId())
         {
             return false;
         }
@@ -183,6 +282,11 @@ class UserController
         $userActivity = new UserActivity($userId);
         if ($userActivity->storeUserActivity() == false)
         {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "L'utilisateur n'a pas été trouvé."
+                ]);
             return false;
         }
         
@@ -212,5 +316,228 @@ class UserController
         }
 
         return false;
+    }
+
+    public function accept()
+    {
+        header('Content-Type: application/json');
+
+        if (!UserConnectionUtils::isAdminConnected()) 
+        {
+            // Définir un code HTTP 405 (Unauthorized)
+            http_response_code(401);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Il faut se connecter en tant qu'administrateur pour utiliser ce endpoint"
+                ]);
+                
+            return false;
+        }
+
+        if (RequestUtils::isPostMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "La méthode n'est pas supportée, veuillez utiliser du GET"
+                ]);
+            return false;
+        }
+
+        // Vérification du token CSRF
+        if (!$this->security->checkCSRFToken())
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
+            return false;
+        }
+
+        // Définir un code HTTP 400 (Bad Request) par défaut 
+        http_response_code(400);
+        $userId = $_POST['id'] ?? null;
+
+        if (empty($userId))
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est absent."
+                ]);
+            return false;
+        }
+
+        $userId = filter_var($userId, FILTER_VALIDATE_INT);
+        if ($userId === false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est incorrect."
+                ]);
+            return false;
+        }
+
+        $userActivity = new UserActivity($userId);
+        if ($userActivity->acceptUser() == false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "L'acceptation de l'utilisateur a échoué. Vérifiez qu'il s'agit un d'utilisateur valide."
+                ]);
+            return false;   
+        }
+
+        $email = $userActivity->getUserEmail();
+        if ($email === false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est introuvable."
+                ]);
+        }
+
+        // On setup les données de l'email à envoyer
+        $emailSender = new EmailSender($email);
+        $emailSender->setSubject(AcceptInscriptionEmail::getSubject([]));
+        $emailSender->setBody(AcceptInscriptionEmail::getEmailContent([]));
+
+        // Envoi de l'email et récupère le résultat
+        $emailSent = $emailSender->sendMail();
+
+        http_response_code(200);
+        echo json_encode
+        ([
+            'status' => 'success',
+            'message' => "L'utilisateur a bien été accepté.",
+            'emailEnvoye' => $emailSent
+        ]);
+
+        return true;
+    }
+
+    public function refuse()
+    {
+        header('Content-Type: application/json');
+
+        if (!UserConnectionUtils::isAdminConnected()) 
+        {
+            // Définir un code HTTP 405 (Unauthorized)
+            http_response_code(401);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Il faut se connecter en tant qu'administrateur pour utiliser ce endpoint"
+                ]);
+                
+            return false;
+        }
+
+        if (RequestUtils::isPostMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "La méthode n'est pas supportée, veuillez utiliser du GET"
+                ]);
+            return false;
+        }
+
+        // Vérification du token CSRF
+        if (!$this->security->checkCSRFToken())
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
+            return false;
+        }
+
+        // Définir un code HTTP 400 (Bad Request) par défaut 
+        http_response_code(400);
+        $userId = $_POST['id'] ?? null;
+
+        if (empty($userId))
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est absent."
+                ]);
+            return false;
+        }
+
+        $userId = filter_var($userId, FILTER_VALIDATE_INT);
+        if ($userId === false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est incorrect."
+                ]);
+            return false;
+        }
+
+        $userActivity = new UserActivity($userId);
+
+        // On récupère d'abord l'email avant de supprimer l'user de la DB
+        $email = $userActivity->getUserEmail();
+        if ($email === false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le paramètre id de l'utilisateur est introuvable."
+                ]);
+            return false;
+        }
+
+        // On setup les infos du mail à envoyer
+        $emailSender = new EmailSender($email);
+        $emailSender->setSubject(RejectInscriptionEmail::getSubject([]));
+        $emailSender->setBody(RejectInscriptionEmail::getEmailContent([]));
+
+        // On envoie le mail
+        $emailSent = $emailSender->sendMail();
+
+        // On peut refuser l'inscription maintenant et donc supprimer le user de la DB
+        if ($userActivity->refuseUser() == false)
+        {
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Le refus de l'utilisateur a échoué. Vérifiez qu'il s'agit un d'utilisateur valide."
+                ]);
+
+            return false;   
+        }
+
+        http_response_code(200);
+        echo json_encode
+        ([
+            'status' => 'success',
+            'message' => "L'utilisateur a bien été accepté.",
+            'emailEnvoye' => $emailSent
+        ]);
+
+        return true;
     }
 } 
