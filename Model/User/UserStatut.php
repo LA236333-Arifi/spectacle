@@ -8,6 +8,16 @@ class UserStatut
     public const Valide_Et_Actif        = 3;
     public const Max                    = 4;
 
+    public static function getUserStatutToString(): array
+    {
+        return 
+        [
+            self::NonValide_Et_Inactif     => 'Non validé',
+            self::Valide_Et_Inactif        => 'Inactif',
+            self::Valide_Et_Actif          => 'Actif',
+        ];
+    }
+
     public static function isValid($type)
     {
         return $type > self::Invalid && $type < self::Max;
