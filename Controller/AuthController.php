@@ -28,9 +28,13 @@ class AuthController
         // Si c'est du GET, alors on affiche seulement la page d'inscription avec le token csrf
         if (RequestUtils::isGetMethod())
         {
-            $csrfToken = $this->security->genererCSRFToken();
+            $viewData = 
+            [
+                'token_csrf' => $this->security->genererCSRFToken(),
+                'roles' => Role::getRoleToString()
+            ];
 
-            $viewRenderer = new ViewRenderer("View/Auth/Register.php", ['token_csrf' => $csrfToken]);
+            $viewRenderer = new ViewRenderer("View/Auth/Register.php", $viewData);
             $viewRenderer->render();
 
             return true;
@@ -264,7 +268,7 @@ class AuthController
             header('Content-Type: application/json');
 
             // Vérification du token CSRF
-            if (!$this->security->checkCSRFToken($_POST['csrf_token'] ?? '')) 
+            if (!$this->security->checkCSRFToken()) 
             {
                 http_response_code(403);
                 echo json_encode([
