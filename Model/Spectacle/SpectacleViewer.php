@@ -3,13 +3,15 @@
 class SpectacleViewer
 {
     private $pdo;
+    private $spectacleId;
 
-    public function __construct()
+    public function __construct($spectacleId)
     {
         $this->pdo = Database::getInstance()->getConnection();
+        $this->spectacleId = $spectacleId;
     }
 
-    public function getSpectacleById(int $spectacleId): ?array
+    public function getSpectacleData(): ?array
     {
         // Récupérer les infos du spectacle
         $querySpectacle = "SELECT s.*, t.nom_type_spectacle, g.nom_groupe, g.date_formation_groupe
@@ -18,7 +20,7 @@ class SpectacleViewer
                            INNER JOIN Groupe_Spectacle g ON s.groupe_id = g.groupe_id
                            WHERE s.spectacle_id = ?";
         $stmt = $this->pdo->prepare($querySpectacle);
-        $stmt->execute([$spectacleId]);
+        $stmt->execute([$this->spectacleId]);
         $spectacle = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$spectacle)
@@ -42,21 +44,41 @@ class SpectacleViewer
                          WHERE spectacle_id = ?
                          ORDER BY date_soiree_seance ASC";
         $stmt = $this->pdo->prepare($querySeances);
-        $stmt->execute([$spectacleId]);
+        $stmt->execute([$this->spectacleId]);
         $spectacle['seances'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Récupérer auteur/metteur en scène si type_id = 1, 4 ou 5
-        if (in_array((int)$spectacle['type_spectacle_id'], [1, 4, 5]))
+        if (SpectacleType::needsAuteur((int)$spectacle['type_spectacle_id']))
         {
-            $queryAuteur = "SELECT nom_auteur, nom_metteur_en_scene
-                            FROM Auteur_Spectacle
+            $queryLiaison = "SELECT auteur_id, metteur_scene_id
+                            FROM Auteur_MetteurScene_Spectacle
                             WHERE spectacle_id = ?";
-            $stmt = $this->pdo->prepare($queryAuteur);
-            $stmt->execute([$spectacleId]);
-            $auteur = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $this->pdo->prepare($queryLiaison);
+            $stmt->execute([$this->spectacleId]);
+            $liaison = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $spectacle['nom_auteur'] = $auteur['nom_auteur'] ?? null;
-            $spectacle['nom_metteur_en_scene'] = $auteur['nom_metteur_en_scene'] ?? null;
+            if ($liaison) 
+            {
+                // Auteur
+                $queryAuteur = "SELECT nom_auteur, prenom_auteur FROM Auteur_Spectacle WHERE auteur_id = ?";
+                $stmtAuteur = $this->pdo->prepare($queryAuteur);
+                $stmtAuteur->execute([$liaison['auteur_id']]);
+                $auteur = $stmtAuteur->fetch(PDO::FETCH_ASSOC);
+
+                // Metteur en scène
+                $queryMetteur = "SELECT nom_metteur_scene, prenom_metteur_scene FROM MetteurScene_Spectacle WHERE metteur_scene_id = ?";
+                $stmtMetteur = $this->pdo->prepare($queryMetteur);
+                $stmtMetteur->execute([$liaison['metteur_scene_id']]);
+                $metteur = $stmtMetteur->fetch(PDO::FETCH_ASSOC);
+
+                $spectacle['nom_auteur'] = isset($auteur) ? $auteur['prenom_auteur'] . ' ' . $auteur['nom_auteur'] : null;
+                $spectacle['nom_metteur_en_scene'] = isset($metteur) ? $metteur['prenom_metteur_scene'] . ' ' . $metteur['nom_metteur_scene'] : null;
+            } 
+            else 
+            {
+                $spectacle['nom_auteur'] = null;
+                $spectacle['nom_metteur_en_scene'] = null;
+            }
         }
 
         return $spectacle;
