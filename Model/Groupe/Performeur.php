@@ -23,7 +23,7 @@ class Performeur
         return false;
     }
 
-       public function getPerformeurData()
+    public function getPerformeurData()
     {
         $query = "SELECT nom_performeur, prenom_performeur, role_performeur_id FROM Performeur_Spectacle WHERE performeur_id = ?";
         $stmt = $this->pdo->prepare($query);
@@ -37,11 +37,18 @@ class Performeur
         return null;
     }
 
-      public function modifierNomPrenom(PerformeurData $data)
+    public function modifierNom($nom)
     {
-        $query = "UPDATE Performeur_Spectacle SET nom_performeur = ?, prenom_performeur = ? WHERE performeur_id = ?";
+        $query = "UPDATE Performeur_Spectacle SET nom_performeur = ? WHERE performeur_id = ?";
         $stmt = $this->pdo->prepare($query);
-        return $stmt->execute([$data->getNom(), $data->getPrenom(), $this->performeurId]);
+        return $stmt->execute([$nom, $this->performeurId]);
+    }
+
+    public function modifierPrenom($prenom)
+    {
+        $query = "UPDATE Performeur_Spectacle SET prenom_performeur = ? WHERE performeur_id = ?";
+        $stmt = $this->pdo->prepare($query);
+        return $stmt->execute([$prenom, $this->performeurId]);
     }
 
     public function modifierRole(int $roleId)
@@ -51,10 +58,48 @@ class Performeur
         return $stmt->execute([$roleId, $this->performeurId]);
     }
 
-     public function supprimerPerformeur()
+    public function supprimerPerformeurSafe()
     {
-        $query = "DELETE FROM Performeur_Spectacle WHERE performeur_id = ?";
-        $stmt = $this->pdo->prepare($query);
-        return $stmt->execute([$this->performeurId]);
+        // Vérifier qu'aucun groupe n'est lié à ce performeur
+        $queryCheck = "SELECT COUNT(*) FROM Liaison_Groupe WHERE performeur_id = ?";
+        $stmtCheck = $this->pdo->prepare($queryCheck);
+        $stmtCheck->execute([$this->performeurId]);
+        $groupeCount = (int)$stmtCheck->fetchColumn();
+
+        if ($groupeCount > 0)
+        {
+            return 
+            [
+                'success' => false,
+                'message' => "Impossible de supprimer le performeur : il est lié à un ou plusieurs groupes."
+            ];
+        }
+
+        try
+        {
+            $this->pdo->beginTransaction();
+
+            // Supprimer le performeur
+            $queryDelete = "DELETE FROM Performeur_Spectacle WHERE performeur_id = ?";
+            $stmtDelete = $this->pdo->prepare($queryDelete);
+            $stmtDelete->execute([$this->performeurId]);
+
+            $this->pdo->commit();
+
+            return 
+            [
+                'success' => true,
+                'message' => "Performeur supprimé avec succès"
+            ];
+        }
+        catch (Exception $e)
+        {
+            $this->pdo->rollBack();
+            return 
+            [
+                'success' => false,
+                'message' => "Erreur lors de la suppression du performeur."
+            ];
+        }
     }
 }

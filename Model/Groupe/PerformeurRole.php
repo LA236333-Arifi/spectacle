@@ -14,4 +14,16 @@ class PerformeurRole
     {
         return $roleId > self::Invalid && $roleId < self::Max;
     }
+
+    public static function getPerformeurRoleToString(): array
+    {
+        return 
+        [
+            self::Danseur         => 'Danseur',
+            self::Humouriste      => 'Humouriste',
+            self::Acteur          => 'Acteur',
+            self::Chanteur        => 'Chanteur',
+            self::Musicien        => 'Musicien'
+        ];
+    }
 }
