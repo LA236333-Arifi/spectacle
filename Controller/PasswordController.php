@@ -30,7 +30,7 @@ class PasswordController
             // Génére le token CSRF
             $csrf_token = $this->security->genererCSRFToken();
             
-            $viewRenderer = new ViewRenderer("View/ResetPassword.php", ['token_csrf' => $csrf_token]);
+            $viewRenderer = new ViewRenderer("View/Visitor/ResetPassword.php", ['token_csrf' => $csrf_token]);
             $viewRenderer->render();
             
             return true;
@@ -233,7 +233,7 @@ class PasswordController
                 echo json_encode([
                     'status' => 'success',
                     'message' => 'Votre mot de passe a été changé avec succès.',
-                    'redirect' => BASE_URL . '/connexion'
+                    'redirect' => BASE_URL . '/login'
                 ]);
                 return true;
             } 
@@ -268,7 +268,7 @@ class PasswordController
 
             // Génération du token csrf 
             $csrf_token = $this->security->genererCSRFToken();
-            $viewRenderer = new ViewRenderer("View/ChangerPassword.php", ['token_csrf' => $csrf_token]);
+            $viewRenderer = new ViewRenderer("View/Visitor/ChangerPassword.php", ['token_csrf' => $csrf_token]);
             $viewRenderer->render();
             return true;
         }

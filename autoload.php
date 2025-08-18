@@ -18,8 +18,9 @@ function myAutoloader($class)
         'Model/DTO/',
         'Model/Validator/',
         'Model/Groupe/',
-        'Model/Tokens',
-        'Templates'
+        'Model/Tokens/',
+        'Model/Auteur/',
+        'Templates/'
     ];
 
     // Cherche dans chaque dossier

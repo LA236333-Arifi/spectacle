@@ -11,22 +11,112 @@ class GroupController
         $this->security = new Security(true);
     }
 
+    public function index()
+    {
+        if (RequestUtils::isGetMethod() == false)
+        {
+            // Définir un code HTTP 405 (Method Not Allowed)
+            http_response_code(405);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Méthode non supportée"));
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(400);
+            ViewRenderer::error(new MessageErreur("Chargement de la page impossible", "Il faut être connecté en tant qu'admin pour visualiser cette page."));
+            return false;
+        }
+
+        $viewData = 
+        [
+            'token_csrf'    => $this->security->genererCSRFToken(),
+            'roles'         => PerformeurRole::getPerformeurRoleToString()
+        ];
+
+        $viewRenderer = new ViewRenderer("View/Gerant/GestionGroupe.php", $viewData);
+        $viewRenderer->render();
+    }
+
+    public function apiList()
+    {
+        header('Content-Type: application/json');
+
+        if (!UserConnectionUtils::isAdminConnected()) 
+        {
+            // Définir un code HTTP 405 (Unauthorized)
+            http_response_code(405);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "Il faut se connecter en tant qu'administrateur pour utiliser ce endpoint"
+                ]);
+                
+            return false;
+        }
+
+        if (RequestUtils::isGetMethod() == false)
+        {
+            // Définir un code HTTP 403 (Method Not Allowed)
+            http_response_code(403);
+
+            // On setup le message d'erreur pour la vue
+            echo json_encode(
+                [
+                    'status' => 'error',
+                    'message' => "La méthode n'est pas supportée, veuillez utiliser du GET"
+                ]);
+            return false;
+        }
+
+        $groupes = Groupe::getAll();
+        echo json_encode($groupes);
+        return true;
+    }
+
     /**
      * Route: POST /groupe/add
      * Ajoute un groupe avec son nom et ses performeurs
      */
     public function addGroup()
     {
+        header('Content-Type: application/json');
+
         if (RequestUtils::isPostMethod() == false)
         {
             http_response_code(405);
-            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour ajouter un groupe."));
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Utilisez POST pour ajouter un groupe."
+            ]);
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            echo json_encode
+            ([
+                'status' => 'error',
+                'message' => "Il faut être connecté en tant qu'admin pour accéder à cet endpoint.",
+            ]);
+            return false;
+        }
+
+        if (!$this->security->checkCSRFToken()) 
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
 
         http_response_code(400);
-        header('Content-Type: application/json');
-
+        
         $nomGroupe = $_POST['nom_groupe'] ?? null;
         $performeurs = $_POST['performeurs'] ?? [];
 
@@ -38,11 +128,16 @@ class GroupController
         }
 
         $groupe = new Groupe();
-        $groupeId = $groupe->creerGroupe($nomGroupe);
+        $result = $groupe->creerGroupe($nomGroupe);
 
-        if (!$groupeId)
+        if ($result == GroupeActionResult::Invalid)
         {
             echo json_encode(['status' => 'error', 'message' => "Impossible de créer le groupe."]);
+            return false;
+        }
+        else if ($result == GroupeActionResult::NomDejaPris)
+        {
+            echo json_encode(['status' => 'error', 'message' => "Le nom du groupe est déjà pris."]);
             return false;
         }
 
@@ -75,7 +170,8 @@ class GroupController
             }
         }
 
-        echo json_encode(['status' => 'success', 'message' => "Groupe créé avec succès", 'groupe_id' => $groupeId]);
+        http_response_code(200);
+        echo json_encode(['status' => 'success', 'message' => "Groupe créé avec succès", 'groupe_id' => $groupe->getId()]);
         return true;
     }
      
@@ -87,10 +183,36 @@ class GroupController
      */
     public function changeGroup()
     {
+        header('Content-Type: application/json');
+
         if (RequestUtils::isPostMethod() == false)
         {
             http_response_code(405);
-            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour modifier un groupe."));
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Utilisez POST pour ajouter un groupe."
+            ]);
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            echo json_encode
+            ([
+                'status' => 'error',
+                'message' => "Il faut être connecté en tant qu'admin pour accéder à cet endpoint.",
+            ]);
+            return false;
+        }
+
+        if (!$this->security->checkCSRFToken()) 
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
 
@@ -101,7 +223,6 @@ class GroupController
         if (empty($groupeId))
         {
             http_response_code(400);
-            header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => "L'identifiant du groupe est requis."]);
             return false;
         }
@@ -157,7 +278,7 @@ class GroupController
             }
         }
 
-        // Suppression des performeurs
+        // Retirer des performeurs du groupe
         if (isset($listePerformeurs['remove']) && is_array($listePerformeurs['remove']))
         {
             foreach ($listePerformeurs['remove'] as $perfData)
@@ -173,7 +294,6 @@ class GroupController
         }
 
         http_response_code(200);
-        header('Content-Type: application/json');
         echo json_encode(['status' => 'success', 'message' => "Groupe modifié avec succès"]);
         return true;
     }
@@ -185,15 +305,40 @@ class GroupController
      */
     public function deleteGroupSafe()
     {
+        header('Content-Type: application/json');
+
         if (RequestUtils::isPostMethod() == false)
         {
             http_response_code(405);
-            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour supprimer un groupe."));
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Utilisez POST pour ajouter un groupe."
+            ]);
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            echo json_encode
+            ([
+                'status' => 'error',
+                'message' => "Il faut être connecté en tant qu'admin pour accéder à cet endpoint.",
+            ]);
+            return false;
+        }
+
+        if (!$this->security->checkCSRFToken()) 
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
 
         http_response_code(400);
-        header('Content-Type: application/json');
 
         $groupeId = $_POST['groupe_id'] ?? null;
 
@@ -232,15 +377,40 @@ class GroupController
      */
     public function addPerformeur()
     {
+        header('Content-Type: application/json');
+
         if (RequestUtils::isPostMethod() == false)
         {
             http_response_code(405);
-            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour ajouter un performeur."));
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Utilisez POST pour ajouter un groupe."
+            ]);
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            echo json_encode
+            ([
+                'status' => 'error',
+                'message' => "Il faut être connecté en tant qu'admin pour accéder à cet endpoint.",
+            ]);
+            return false;
+        }
+
+        if (!$this->security->checkCSRFToken()) 
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
 
         http_response_code(400);
-        header('Content-Type: application/json');
 
         $nom = $_POST['nom_performeur'] ?? null;
         $prenom = $_POST['prenom_performeur'] ?? null;
@@ -275,15 +445,40 @@ class GroupController
      */
     public function changePerformeur()
     {
+        header('Content-Type: application/json');
+
         if (RequestUtils::isPostMethod() == false)
         {
             http_response_code(405);
-            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour modifier un performeur."));
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Utilisez POST pour ajouter un groupe."
+            ]);
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            echo json_encode
+            ([
+                'status' => 'error',
+                'message' => "Il faut être connecté en tant qu'admin pour accéder à cet endpoint.",
+            ]);
+            return false;
+        }
+
+        if (!$this->security->checkCSRFToken()) 
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
 
         http_response_code(400);
-        header('Content-Type: application/json');
 
         $performeurId = $_POST['performeur_id'] ?? null;
         $nom = $_POST['nom_performeur'] ?? null;
@@ -337,15 +532,40 @@ class GroupController
      */
     public function deletePerformeurSafe()
     {
+        header('Content-Type: application/json');
+
         if (RequestUtils::isPostMethod() == false)
         {
             http_response_code(405);
-            ViewRenderer::error(new MessageErreur("Méthode non supportée", "Utilisez POST pour supprimer un performeur."));
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Utilisez POST pour ajouter un groupe."
+            ]);
+            return false;
+        }
+
+        if (UserConnectionUtils::isAdminConnected() == false)
+        {
+            http_response_code(403);
+            echo json_encode
+            ([
+                'status' => 'error',
+                'message' => "Il faut être connecté en tant qu'admin pour accéder à cet endpoint.",
+            ]);
+            return false;
+        }
+
+        if (!$this->security->checkCSRFToken()) 
+        {
+            http_response_code(403);
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Token CSRF invalide."
+            ]);
             return false;
         }
 
         http_response_code(400);
-        header('Content-Type: application/json');
 
         $performeurId = $_POST['performeur_id'] ?? null;
 

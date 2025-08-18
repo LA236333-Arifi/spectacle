@@ -20,7 +20,13 @@ class DashboardController
 
     public function programmation()
     {
-        $viewRenderer = new ViewRenderer("View/Visitor/Programmation.php", []);
+        $viewData = 
+        [
+            'types'     => SpectacleType::getSpectacleTypeToString(),
+            'statuts'   => SeanceStatut::getSeanceStatutToString()
+        ];
+
+        $viewRenderer = new ViewRenderer("View/Visitor/Programmation.php", $viewData);
         $viewRenderer->render();
     }
     
