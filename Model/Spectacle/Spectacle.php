@@ -1,5 +1,7 @@
 <?php
 
+use function PHPUnit\Framework\isNull;
+
 class Spectacle
 {
     private $spectacleId;
@@ -33,28 +35,20 @@ class Spectacle
         return $stmt->fetchColumn() > 0;
     }
 
-    private function checkTypeSpectacleId($typeId): bool
+    private function checkAuteurId(int $auteurId): bool
     {
         $pdo = Database::getInstance()->getConnection();
-
-        $query = "SELECT COUNT(*) FROM Type_Spectacle WHERE type_spectacle_id = :id";
-        $stmt = $pdo->prepare($query);
-        $stmt->bindValue(':id', $typeId, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchColumn() > 0;
+        $stmt = $pdo->prepare("SELECT 1 FROM Auteur_Spectacle WHERE auteur_id = ? LIMIT 1");
+        $stmt->execute([$auteurId]);
+        return (bool) $stmt->fetchColumn();
     }
 
-    private function checkStatutSpectacleId($statutId): bool
+    private function checkMetteurSceneId(int $metteurSceneId): bool
     {
         $pdo = Database::getInstance()->getConnection();
-
-        $query = "SELECT COUNT(*) FROM Statut_Spectacle WHERE statut_spectacle_id = :id";
-        $stmt = $pdo->prepare($query);
-        $stmt->bindValue(':id', $statutId, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchColumn() > 0;
+        $stmt = $pdo->prepare("SELECT 1 FROM MetteurScene_Spectacle WHERE metteur_scene_id = ? LIMIT 1");
+        $stmt->execute([$metteurSceneId]);
+        return (bool) $stmt->fetchColumn();
     }
 
     private function checkUtilisateurId($utilisateurId): bool
@@ -67,6 +61,36 @@ class Spectacle
         $stmt->execute();
 
         return $stmt->fetchColumn() > 0;
+    }
+
+    private function checkSpectacleNameIsValid($nomSpectacle): bool
+    {
+        // Connexion à la base de données
+        $db = Database::getInstance()->getConnection();
+
+        // Requête SQL pour vérifier si un spectacle avec le même nom existe avec un statut différent de 3
+        $sql = "
+            SELECT COUNT(*) 
+            FROM Spectacle 
+            WHERE nom_spectacle = :nom_spectacle
+            AND statut_spectacle_id != 3
+        ";
+
+        // Préparer et exécuter la requête
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':nom_spectacle' => $nomSpectacle]);
+
+        // Récupérer le nombre de spectacles trouvés
+        $count = $stmt->fetchColumn();
+
+        // Si le nombre est supérieur à 0, un spectacle avec le même nom et un statut différent de 3 existe
+        if ($count > 0) 
+        {
+            return false;
+        }
+
+        // Aucun spectacle avec ce nom et un statut != 3, donc le nom est valide
+        return true;
     }
 
     public function addSpectacle(array $data)
@@ -87,28 +111,18 @@ class Spectacle
             $pdo->beginTransaction();
 
             // 1. Déterminer le groupe_id
-            if ($spectacleData->hasGroupe())
+            $groupeId = $spectacleData->getGroupeId();
+            if ($this->checkGroupeId($groupeId) == false)
             {
-                $groupeId = $spectacleData->getGroupeId();
-                if ($this->checkGroupeId($groupeId) == false)
-                {
-                    throw new Exception("Le groupeId est invalide.");
-                }
-            }
-            else
-            {
-                $query = "INSERT INTO Groupe_Spectacle (nom_groupe, date_formation_groupe) VALUES (?, NOW())";
-                $stmt = $pdo->prepare($query);
-                $stmt->execute([$spectacleData->getNomGroupe()]);
-                $groupeId = $pdo->lastInsertId();
+                throw new Exception("Le groupeId est invalide.");
             }
 
-            if ($this->checkTypeSpectacleId($spectacleData->getType()) == false)
+            if (SpectacleType::isValid($spectacleData->getType()) == false)
             {
                 throw new Exception("Le spectacleTypeId est invalide.");
             }
 
-            if ($this->checkStatutSpectacleId($spectacleData->getStatutSpectacleId()) == false)
+            if (SpectacleStatut::isValid($spectacleData->getStatutSpectacleId()) == false)
             {
                 throw new Exception("Le statutId est invalide.");
             }
@@ -116,6 +130,11 @@ class Spectacle
             if ($this->checkUtilisateurId($spectacleData->getUtilisateurId()) == false)
             {
                 throw new Exception("L'utilisateurId est invalide.");
+            }
+
+            if ($this->checkSpectacleNameIsValid($spectacleData->getNom()) == false)
+            {
+                throw new Exception("Le nom du spectacle est déjà pris. Vous pouvez cloturer le spectacle qui en dispose du nom.");
             }
 
             // 2. Créer le spectacle
@@ -141,32 +160,31 @@ class Spectacle
             $this->spectacleId = $spectacleId;
 
             // 3. Ajouter auteur/metteur en scène si requis
-            if (in_array($spectacleData->getType(), [SpectacleType::Humoriste, SpectacleType::Theatre, SpectacleType::Danse]))
+            if (SpectacleType::needsAuteur($spectacleData->getType()))
             {
-                $query = "INSERT INTO Auteur_Spectacle (nom_auteur, nom_metteur_en_scene, spectacle_id) VALUES (?, ?, ?)";
-                $stmt = $pdo->prepare($query);
-                $stmt->execute([
-                    $spectacleData->getNomAuteur(),
-                    $spectacleData->getNomMetteurEnScene(),
-                    $spectacleId
-                ]);
-            }
+                $auteurId = $spectacleData->getAuteurId();            // attendu depuis le POST: auteur_id
+                $metteurId = $spectacleData->getMetteurSceneId();     // attendu depuis le POST: metteur_id
 
-            // 4. Ajouter les performeurs et les lier au groupe
-            foreach ($spectacleData->getPerformeurs() as $performeur)
-            {
-                $query = "INSERT INTO Performeur_Spectacle (nom_performeur, prenom_performeur, role_performeur_id) VALUES (?, ?, ?)";
-                $stmt = $pdo->prepare($query);
-                $stmt->execute([
-                    $performeur->getNom(),
-                    $performeur->getPrenom(),
-                    $performeur->getRoleId()
-                ]);
-                $performeurId = $pdo->lastInsertId();
+                if (empty($auteurId) || empty($metteurId)) 
+                {
+                    throw new Exception("Auteur et Metteur en scène sont requis pour ce type de spectacle.");
+                }
 
-                $query = "INSERT INTO Liaison_Groupe (groupe_id, performeur_id) VALUES (?, ?)";
-                $stmt = $pdo->prepare($query);
-                $stmt->execute([$groupeId, $performeurId]);
+                if ($this->checkAuteurId($auteurId) === false) 
+                {
+                    throw new Exception("L'auteurId est invalide.");
+                }
+
+                if ($this->checkMetteurSceneId($metteurId) === false) 
+                {
+                    throw new Exception("Le metteurSceneId est invalide.");
+                }
+
+                // Lier au spectacle (UNIQUE(spectacle_id) garantit un seul couple par spectacle)
+                $queryLiaison = "INSERT INTO Auteur_MetteurScene_Spectacle (auteur_id, metteur_scene_id, spectacle_id)
+                                VALUES (?, ?, ?)";
+                $stmtLiaison = $pdo->prepare($queryLiaison);
+                $stmtLiaison->execute([$auteurId, $metteurId, $spectacleId]);
             }
 
             $pdo->commit();
@@ -175,137 +193,8 @@ class Spectacle
         catch (Exception $e)
         {
             $pdo->rollBack();
+            $this->errors[] = $e->getMessage();
             error_log("Erreur lors de l'ajout du spectacle : " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function modifySpectacle(array $data)
-    {
-        if (empty($this->spectacleId))
-        {
-            return false;
-        }
-
-        $pdo = Database::getInstance()->getConnection();
-
-        // Champs modifiables dans Spectacle
-        $allowedFields = [
-            'nom_spectacle',
-            'texte_accroche_spectacle',
-            'prix_spectacle',
-            'duree_minutes_spectacle',
-            'statut_spectacle_id',
-            'utilisateur_id',
-            'groupe_id',
-            'type_spectacle_id'
-        ];
-
-        $fieldsToUpdate = [];
-        $params = [];
-
-        foreach ($data as $key => $value)
-        {
-            if (in_array($key, $allowedFields))
-            {
-                $fieldsToUpdate[] = "$key = ?";
-                $params[] = $value;
-            }
-        }
-
-        // Toujours mettre à jour la date de modification
-        $fieldsToUpdate[] = "derniere_date_modification_spectacle = NOW()";
-
-        if (empty($fieldsToUpdate))
-        {
-            return false;
-        }
-
-        // Récupérer l'ancien type de spectacle
-        $queryType = "SELECT type_spectacle_id FROM Spectacle WHERE spectacle_id = ?";
-        $stmtType = $pdo->prepare($queryType);
-        $stmtType->execute([$this->spectacleId]);
-        $oldType = (int)$stmtType->fetchColumn();
-
-        $newType = isset($data['type_spectacle_id']) ? (int)$data['type_spectacle_id'] : $oldType;
-
-        try
-        {
-            $pdo->beginTransaction();
-
-            // Si on passe d'un type avec auteur/metteur en scène à un type sans, on supprime la ligne Auteur_Spectacle
-            if (SpectacleType::needsAuteur($oldType) && !SpectacleType::needsAuteur($newType))
-            {
-                $queryDeleteAuteur = "DELETE FROM Auteur_Spectacle WHERE spectacle_id = ?";
-                $stmtDeleteAuteur = $pdo->prepare($queryDeleteAuteur);
-                $stmtDeleteAuteur->execute([$this->spectacleId]);
-            }
-
-            // Si on passe d'un type sans auteur/metteur en scène à un type avec, on doit vérifier la présence des champs
-            if (!SpectacleType::needsAuteur($oldType) && SpectacleType::needsAuteur($newType))
-            {
-                if (empty($data['nom_auteur']) || empty($data['nom_metteur_en_scene']))
-                {
-                    $pdo->rollBack();
-                    return false;
-                }
-
-                // On insère la ligne Auteur_Spectacle
-                $queryInsertAuteur = "INSERT INTO Auteur_Spectacle (nom_auteur, nom_metteur_en_scene, spectacle_id) VALUES (?, ?, ?)";
-                $stmtInsertAuteur = $pdo->prepare($queryInsertAuteur);
-                $stmtInsertAuteur->execute([
-                    $data['nom_auteur'],
-                    $data['nom_metteur_en_scene'],
-                    $this->spectacleId
-                ]);
-            }
-
-            // Si on tente de modifier nom_auteur ou nom_metteur_en_scene alors que le type est 2 ou 3, on annule
-            if (!SpectacleType::needsAuteur($newType) && (isset($data['nom_auteur']) || isset($data['nom_metteur_en_scene'])))
-            {
-                $pdo->rollBack();
-                return false;
-            }
-
-            // Vérification lors de la modification de nom_auteur ou nom_metteur_en_scene
-            if (SpectacleType::needsAuteur($newType))
-            {
-                $auteurFields = [];
-                $auteurParams = [];
-
-                if (isset($data['nom_auteur']))
-                {
-                    $auteurFields[] = "nom_auteur = ?";
-                    $auteurParams[] = $data['nom_auteur'];
-                }
-                if (isset($data['nom_metteur_en_scene']))
-                {
-                    $auteurFields[] = "nom_metteur_en_scene = ?";
-                    $auteurParams[] = $data['nom_metteur_en_scene'];
-                }
-
-                if (!empty($auteurFields))
-                {
-                    $auteurQuery = "UPDATE Auteur_Spectacle SET " . implode(', ', $auteurFields) . " WHERE spectacle_id = ?";
-                    $auteurParams[] = $this->spectacleId;
-                    $stmtAuteur = $pdo->prepare($auteurQuery);
-                    $stmtAuteur->execute($auteurParams);
-                }
-            }
-
-            $query = "UPDATE Spectacle SET " . implode(', ', $fieldsToUpdate) . " WHERE spectacle_id = ?";
-            $params[] = $this->spectacleId;
-
-            $stmt = $pdo->prepare($query);
-            $stmt->execute($params);
-
-            $pdo->commit();
-            return true;
-        }
-        catch (Exception $e)
-        {
-            $pdo->rollBack();
-            error_log("Erreur lors de la modification du spectacle : " . $e->getMessage());
             return false;
         }
     }
@@ -352,16 +241,28 @@ class Spectacle
             $pdo->beginTransaction();
 
             $querySeance = "DELETE FROM Seance WHERE spectacle_id = ?";
-            $queryAuteur = "DELETE FROM Auteur_Spectacle WHERE spectacle_id = ?";
             $querySpectacle = "DELETE FROM Spectacle WHERE spectacle_id = ?";
             
+            $queryGetLiaison = "SELECT auteur_id, metteur_scene_id FROM Auteur_MetteurScene_Spectacle WHERE spectacle_id = ?";
+            $stmtGetLiaison = $pdo->prepare($queryGetLiaison);
+            $stmtGetLiaison->execute([$this->spectacleId]);
+            $liaison = $stmtGetLiaison->fetch(PDO::FETCH_ASSOC);
+
+            if ($liaison) 
+            {
+                $pdo->prepare("DELETE FROM Auteur_MetteurScene_Spectacle WHERE spectacle_id = ?")
+                ->execute([$this->spectacleId]);
+
+                $pdo->prepare("DELETE FROM Auteur_Spectacle WHERE auteur_id = ?")
+                ->execute([$liaison['auteur_id']]);
+
+                $pdo->prepare("DELETE FROM MetteurScene_Spectacle WHERE metteur_scene_id = ?")
+                ->execute([$liaison['metteur_scene_id']]);
+            }
+
             // Supprimer toutes les séances liées au spectacle
             $stmt = $pdo->prepare($querySeance);
-            $stmt->execute([$this->spectacleId]);
-
-            // Supprimer l'auteur lié au spectacle
-            $stmt = $pdo->prepare($queryAuteur);
-            $stmt->execute([$this->spectacleId]);
+            $stmt->execute([$this->spectacleId]);;
 
             // Supprimer le spectacle
             $stmt = $pdo->prepare($querySpectacle);
