@@ -20,25 +20,22 @@ class ViewRenderer
     {
         // On require la vue
         $error = $errorData;
-        //require 'View/Error.php';
+        $errorAccueil = BASE_URL . "/";
+        require 'View/Error.php';
     }
 
-    public function render($skipHeader = false, $skipFooter = false)
+    public static function show404()
     {
-        if (!$skipHeader)
-        {
-            require 'View/layout/header.php';
-        }
+        http_response_code(404);
+        echo "<h1>Erreur 404</h1><p>Page non trouvée</p>";
+    }
 
+    public function render()
+    {
         // On copie le contenu de viewData dans une variable locale $view qui sera disponible 
         // à utiliser dans la page qu'on require. Elle contient les infos dynamiques dont la 
         // page a besoin pour son affichage. La variable DOIT s'appeler '$view' dans la vue
         $view = $this->viewData;
-        require $page;
-
-        if ($skipFooter)
-        {
-            require 'View/layout/footer.php';
-        }
+        require $this->page;
     }
 }
