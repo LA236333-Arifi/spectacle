@@ -1,0 +1,135 @@
+/* Structure générale */
+body {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9fc;
+  color: #333;
+}
+
+main {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Titres */
+h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+h3 {
+  margin-top: 2rem;
+  font-size: 1.3rem;
+  color: #34495e;
+}
+
+/* Paragraphes */
+p {
+  margin-bottom: 1.5rem;
+  color: #555;
+}
+
+/* Formulaire */
+form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+form input[type="text"],
+form input[type="number"] {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+form button[type="submit"] {
+  background-color: #3498db;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+form button[type="submit"]:hover {
+  background-color: #2980b9;
+}
+
+/* Bouton ajout */
+#performeursFields button[type="button"] {
+  margin-top: 1rem;
+  background-color: #2ecc71;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#performeursFields button[type="button"]:hover {
+  background-color: #27ae60;
+}
+
+/* Bloc performeur */
+.performeur-block {
+  background-color: #f0f4f8;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: center;
+}
+
+.performeur-block input {
+  margin-bottom: 0;
+}
+
+.performeur-block .remove-performeur {
+  background-color: #e74c3c !important;
+  color: white !important;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.performeur-block .remove-performeur:hover {
+  background-color: #c0392b !important;
+}
+
+/* Résultat */
+#createGroupResult {
+  margin-top: 2rem;
+  font-weight: bold;
+  color: #27ae60;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  main {
+    padding: 1rem;
+  }
+
+  .performeur-block {
+    grid-template-columns: 1fr;
+  }
+}
