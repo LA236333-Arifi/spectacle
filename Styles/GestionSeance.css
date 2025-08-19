@@ -1,0 +1,167 @@
+.seances-main {
+  padding: clamp(16px, 3vw, 32px);
+  font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+}
+
+.tabs {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.tabs-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #111827;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s ease;
+}
+.tab-btn:hover { background: #eef2ff; }
+.tab-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(99,102,241,0.3);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(17,24,39,0.08);
+  padding: 20px;
+}
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-weight: 600; margin-bottom: 6px; color: #374151; }
+.field select, .field input[type="date"] {
+  width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff;
+}
+
+.actions { display: flex; gap: 10px; margin-top: 8px; }
+
+.btn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .05s ease, background .2s ease;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary { background: linear-gradient(135deg, #10b981, #059669); }
+.btn-primary:hover { background: linear-gradient(135deg, #34d399, #10b981); }
+
+.btn-info { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.btn-info:hover { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+
+.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.btn-danger:hover { background: linear-gradient(135deg, #f87171, #ef4444); }
+
+.message {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: none;
+  border: 1px solid transparent;
+}
+.message.info { background: #f1f5f9; color: #0f172a; border-color: #e2e8f0; }
+.message.success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.message.error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+.help { margin-top: 8px; color: #6b7280; font-size: 0.95rem; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .seances-main {
+    padding: clamp(12px, 3vw, 20px);
+  }
+  
+  .tabs {
+    max-width: 100%;
+  }
+  
+  .tabs-header {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  
+  .actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+  
+  .field select, .field input[type="date"] {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .seances-main {
+    padding: clamp(8px, 2vw, 16px);
+  }
+  
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+  
+  .card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+  
+  .field label {
+    font-size: 0.9rem;
+  }
+  
+  .field select, .field input[type="date"] {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  
+  .btn {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+  
+  .message {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+  }
+  
+  .help {
+    font-size: 0.85rem;
+  }
+}
