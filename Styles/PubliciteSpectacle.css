@@ -1,0 +1,207 @@
+/* ====== Structure générale ====== */
+body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background-color: #f8f9fb;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+main {
+    max-width: 1600px; /* élargi pour accueillir 4 colonnes */
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+/* ====== Titre ====== */
+main h1 {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 25px;
+    color: #222;
+}
+
+/* ====== Onglets ====== */
+.tabs {
+    display: flex;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px 15px;
+    background: #f0f0f0;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    color: #555;
+    transition: all 0.25s ease-in-out;
+}
+
+.tab-btn:hover {
+    background: #e5e5e5;
+}
+
+.tab-btn.active {
+    background: #fff;
+    color: #007bff;
+    border-bottom: 3px solid #007bff;
+}
+
+/* ====== Contenu des onglets ====== */
+.tab-pane { display: none; }
+.tab-pane.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ====== Boutons ====== */
+.btn {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.btn.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn.primary:hover {
+    background-color: #0069d9;
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    background-color: #ccc !important;
+    cursor: not-allowed;
+}
+
+/* Centrage bouton */
+.btn-center {
+    text-align: center;
+    margin-top: 25px;
+}
+
+/* ====== En-tête onglet 2 ====== */
+.onglet2-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.onglet2-header p {
+    flex: 1;
+    font-size: 15px;
+    margin: 0;
+}
+
+/* ====== Liste des spectacles ====== */
+/* Grille large pour 4 éléments par ligne */
+.spectacle-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    max-height: 80vh; /* on laisse défiler si trop haut */
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f0f2f5;
+    padding: 10px;
+}
+
+/* Scrollbar custom */
+.spectacle-list::-webkit-scrollbar {
+    width: 8px;
+}
+.spectacle-list::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 4px;
+    gap: 25px;
+}
+.spectacle-list::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Carte spectacle */
+.spectacle-item {
+    background: white;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.spectacle-item:hover {
+    background: #f1f7ff;
+    border-color: #cce0ff;
+    transform: translateY(-1px);
+}
+
+.spectacle-item.selected {
+    background: #e0efff;
+    border-color: #80bdff;
+}
+
+.spectacle-item h3 {
+    font-size: 1.1rem;
+    margin: 0 0 5px;
+    color: #222;
+}
+
+.spectacle-item .accroche {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.spectacle-item .infos-cle {
+    font-size: 0.85rem;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.spectacle-item ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.spectacle-item li {
+    margin-bottom: 4px;
+}
+
+/* Responsive : 2 colonnes tablette, 1 mobile */
+@media (max-width: 1024px) {
+    .spectacle-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .tab-btn { font-size: 14px; padding: 10px; }
+    .onglet2-header { flex-direction: column; align-items: flex-start; }
+    .spectacle-list {
+        grid-template-columns: 1fr;
+    }
+}
