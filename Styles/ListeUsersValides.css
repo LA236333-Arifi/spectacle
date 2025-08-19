@@ -1,0 +1,167 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa; /* fond clair */
+    color: #212529;
+    margin: 0;
+    padding: 0;
+}
+
+main {
+    padding: 20px;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+p {
+    margin-bottom: 15px;
+}
+
+.actions-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #212529;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.btn.primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.badge {
+    background-color: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.85em;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    margin-bottom: 15px;
+}
+
+thead {
+    background-color: #dee2e6;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+tr.row-pending {
+    background-color: #fff3cd; /* jaune pâle pour signaler */
+}
+
+.status-pill {
+    display: inline-block;
+    padding: 4px 6px;
+    border-radius: 8px;
+    font-size: 0.85em;
+}
+
+.status-pill.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-pill.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.switch {
+    width: 40px;
+    height: 20px;
+    background: #ccc;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    margin-left: 5px;
+    vertical-align: middle;
+    border: none;
+}
+
+.switch::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: left 0.2s;
+}
+
+.switch.on {
+    background: #28a745;
+}
+
+.switch.on::after {
+    left: 22px;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert {
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.alert.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.popup {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.popup-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    min-width: 300px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}

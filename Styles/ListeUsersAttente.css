@@ -1,0 +1,152 @@
+/* Reset & base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+main {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+h2 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-bottom: 1.5rem;
+}
+
+/* Table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+thead {
+  background: linear-gradient(to right, #4facfe, #00f2fe);
+  color: white;
+}
+
+thead th {
+  padding: 0.8rem;
+  text-align: left;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+tbody td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+tbody tr:hover {
+  background-color: #f3f8ff;
+  transition: background 0.2s;
+}
+
+/* Buttons */
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #e0e0e0;
+  color: #333;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover:not(:disabled) {
+  background-color: #d5d5d5;
+}
+
+.btn.primary {
+  background-color: #4facfe;
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: #3a8dde;
+}
+
+.btn.success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn.success:hover {
+  background-color: #218838;
+}
+
+.btn.danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn.danger:hover {
+  background-color: #c82333;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+/* Alert */
+.alert {
+  padding: 0.8rem 1rem;
+  background-color: #ffeeba;
+  color: #856404;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+/* Popup */
+.popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-content {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 6px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
